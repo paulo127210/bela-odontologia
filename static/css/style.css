@@ -1,0 +1,193 @@
+:root {
+    --primary: #0d6efd;
+    --sidebar-bg: #1a1f36;
+    --sidebar-width: 255px;
+    --topbar-height: 60px;
+}
+
+/* ---------- Layout ---------- */
+body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+
+#sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background: var(--sidebar-bg);
+    position: fixed;
+    top: 0; left: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: transform .25s ease;
+}
+
+#sidebar .brand {
+    padding: 20px 20px 10px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+#sidebar .brand h5 {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: .5px;
+    margin: 0;
+}
+
+#sidebar .brand small { color: #8892b0; font-size: .7rem; }
+
+#sidebar .nav-section {
+    padding: 8px 16px 2px;
+    font-size: .65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8892b0;
+    margin-top: 10px;
+}
+
+#sidebar .nav-link {
+    color: #a8b2d8;
+    padding: 9px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 6px;
+    margin: 2px 8px;
+    font-size: .875rem;
+    transition: background .15s, color .15s;
+    text-decoration: none;
+}
+
+#sidebar .nav-link:hover,
+#sidebar .nav-link.active {
+    background: rgba(255,255,255,.1);
+    color: #fff;
+}
+
+#sidebar .nav-link i { width: 18px; text-align: center; }
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---------- Topbar ---------- */
+.topbar {
+    height: var(--topbar-height);
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+}
+
+.topbar .page-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #212529;
+    margin: 0;
+}
+
+.topbar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .875rem;
+    color: #495057;
+}
+
+.topbar .user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600;
+    font-size: .8rem;
+}
+
+/* ---------- Cards / Stat ---------- */
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    transition: transform .2s;
+}
+
+.stat-card:hover { transform: translateY(-2px); }
+
+.stat-card .icon-box {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+}
+
+/* ---------- Tables ---------- */
+.table-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    overflow: hidden;
+}
+
+.table-card .card-header {
+    background: #fff;
+    border-bottom: 1px solid #f0f2f5;
+    font-weight: 600;
+    padding: 14px 20px;
+}
+
+.table thead th {
+    background: #f8f9fa;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #6c757d;
+    border-bottom: 1px solid #dee2e6;
+    padding: 10px 12px;
+}
+
+.table td { vertical-align: middle; padding: 10px 12px; font-size: .875rem; }
+
+/* ---------- Status badges ---------- */
+.badge-agendada   { background: #e3f2fd; color: #1565c0; }
+.badge-realizada  { background: #e8f5e9; color: #2e7d32; }
+.badge-cancelada  { background: #ffebee; color: #c62828; }
+.badge-confirmada { background: #fff3e0; color: #e65100; }
+
+/* ---------- Login page ---------- */
+.login-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1f36 0%, #0d6efd 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+
+/* ---------- Sidebar toggler (mobile) ---------- */
+@media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); }
+    #sidebar.open { transform: translateX(0); }
+    .main-content { margin-left: 0; }
+}
+
+/* ---------- Recibo ---------- */
+@media print {
+    #sidebar, .topbar, .no-print { display: none !important; }
+    .main-content { margin-left: 0; }
+}

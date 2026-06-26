@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{{ paciente.nome }} — Bela Odontologia{% endblock %}
+{% block page_title %}Paciente: {{ paciente.nome }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Info card -->
+  <div class="col-lg-4">
+    <div class="card table-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-circle me-1"></i> Dados Pessoais</span>
+        <a href="{{ url_for('pacientes_editar', pid=paciente.id) }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-pencil"></i>
+        </a>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5 text-muted">Nome</dt>
+          <dd class="col-7 fw-semibold">{{ paciente.nome }}</dd>
+
+          <dt class="col-5 text-muted">Nascimento</dt>
+          <dd class="col-7">{{ paciente.data_nascimento or '—' }}</dd>
+
+          <dt class="col-5 text-muted">CPF</dt>
+          <dd class="col-7">{{ paciente.cpf or '—' }}</dd>
+
+          <dt class="col-5 text-muted">Telefone</dt>
+          <dd class="col-7">{{ paciente.telefone or '—' }}</dd>
+
+          <dt class="col-5 text-muted">E-mail</dt>
+          <dd class="col-7">{{ paciente.email or '—' }}</dd>
+
+          <dt class="col-5 text-muted">Endereço</dt>
+          <dd class="col-7">{{ paciente.endereco or '—' }}</dd>
+
+          <dt class="col-5 text-muted">Convênio</dt>
+          <dd class="col-7">{{ paciente.convenio or 'Particular' }}</dd>
+
+          {% if paciente.historico_medico %}
+          <dt class="col-12 text-muted mt-2">Histórico Médico</dt>
+          <dd class="col-12 border rounded p-2 bg-light small">{{ paciente.historico_medico }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex flex-column gap-2">
+      <a href="{{ url_for('consultas_nova') }}?paciente_id={{ paciente.id }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i> Agendar Consulta
+      </a>
+      <a href="{{ url_for('pacientes_lista') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Histórico de consultas -->
+  <div class="col-lg-8">
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-clock-history me-1"></i> Histórico de Consultas</div>
+      <div class="card-body p-0">
+        {% if consultas %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr><th>Data</th><th>Dentista</th><th>Procedimento</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for c in consultas %}
+              <tr>
+                <td>{{ c.data_hora | dt }}</td>
+                <td>{{ c.dentista }}</td>
+                <td>{{ c.tipo_procedimento or '—' }}</td>
+                <td><span class="badge rounded-pill badge-{{ c.status }}">{{ c.status | capitalize }}</span></td>
+                <td>
+                  <a href="{{ url_for('consultas_detalhes', cid=c.id) }}" class="btn btn-sm btn-outline-primary py-0">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+          Nenhuma consulta registrada.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

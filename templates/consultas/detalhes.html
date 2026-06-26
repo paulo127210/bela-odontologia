@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Consulta #{{ consulta.id }} — Bela Odontologia{% endblock %}
+{% block page_title %}Consulta #{{ consulta.id }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Resumo da consulta -->
+  <div class="col-lg-5">
+    <div class="card table-card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-info-circle me-1"></i> Dados da Consulta</span>
+        <a href="{{ url_for('consultas_editar', cid=consulta.id) }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-pencil"></i>
+        </a>
+      </div>
+      <div class="card-body">
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Paciente</dt>
+          <dd class="col-7 fw-semibold">
+            <a href="{{ url_for('pacientes_detalhes', pid=consulta.paciente_id) }}">{{ consulta.paciente_nome }}</a>
+          </dd>
+          <dt class="col-5 text-muted">Dentista</dt>
+          <dd class="col-7">{{ consulta.dentista_nome }}</dd>
+          <dt class="col-5 text-muted">Data / Hora</dt>
+          <dd class="col-7">{{ consulta.data_hora | dt }}</dd>
+          <dt class="col-5 text-muted">Procedimento</dt>
+          <dd class="col-7">{{ consulta.tipo_procedimento or '—' }}</dd>
+          <dt class="col-5 text-muted">Status</dt>
+          <dd class="col-7">
+            <span class="badge rounded-pill badge-{{ consulta.status }}">{{ consulta.status | capitalize }}</span>
+          </dd>
+          {% if consulta.observacoes %}
+          <dt class="col-12 text-muted mt-2">Observações</dt>
+          <dd class="col-12 bg-light border rounded p-2">{{ consulta.observacoes }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <!-- Ações -->
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-lightning me-1"></i> Ações</div>
+      <div class="card-body d-flex flex-column gap-2">
+        <a href="{{ url_for('prontuarios_form', cid=consulta.id) }}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-file-medical me-1"></i>
+          {{ 'Editar Prontuário' if prontuario else 'Registrar Prontuário' }}
+        </a>
+        {% if not pagamento %}
+        <a href="{{ url_for('faturamento_novo', cid=consulta.id) }}" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-cash me-1"></i> Registrar Pagamento
+        </a>
+        {% endif %}
+        {% if consulta.status not in ('cancelada','realizada') %}
+        <form method="POST" action="{{ url_for('consultas_cancelar', cid=consulta.id) }}"
+              onsubmit="return confirm('Cancelar esta consulta?')">
+          <button class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-x-circle me-1"></i> Cancelar Consulta</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('consultas_lista') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prontuário + Pagamento -->
+  <div class="col-lg-7">
+    <!-- Prontuário -->
+    <div class="card table-card mb-3">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-file-medical me-1 text-primary"></i> Prontuário</span>
+        {% if prontuario %}
+        <a href="{{ url_for('prontuarios_form', cid=consulta.id) }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-pencil"></i>
+        </a>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if prontuario %}
+        <h6 class="text-muted small text-uppercase mb-1">Anotações</h6>
+        <p class="border rounded p-2 bg-light small">{{ prontuario.anotacoes or '—' }}</p>
+        <h6 class="text-muted small text-uppercase mb-1 mt-3">Prescrição</h6>
+        <p class="border rounded p-2 bg-light small">{{ prontuario.prescricao or '—' }}</p>
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-file-earmark-x fs-3 d-block mb-1"></i>
+          Prontuário ainda não preenchido.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Pagamento -->
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-receipt me-1 text-success"></i> Pagamento</div>
+      <div class="card-body">
+        {% if pagamento %}
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Valor</dt>
+          <dd class="col-7 fw-bold text-success">{{ pagamento.valor | brl }}</dd>
+          <dt class="col-5 text-muted">Data</dt>
+          <dd class="col-7">{{ pagamento.data_pagamento }}</dd>
+          <dt class="col-5 text-muted">Forma</dt>
+          <dd class="col-7">{{ pagamento.forma_pagamento or '—' }}</dd>
+          <dt class="col-5 text-muted">Convênio</dt>
+          <dd class="col-7">{{ pagamento.convenio or 'Particular' }}</dd>
+          <dt class="col-5 text-muted">Status</dt>
+          <dd class="col-7"><span class="badge bg-success">{{ pagamento.status | capitalize }}</span></dd>
+        </dl>
+        <a href="{{ url_for('faturamento_recibo', pgid=pagamento.id) }}"
+           class="btn btn-sm btn-outline-success mt-3">
+          <i class="bi bi-printer me-1"></i> Emitir Recibo
+        </a>
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-cash-coin fs-3 d-block mb-1"></i>
+          Pagamento não registrado.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

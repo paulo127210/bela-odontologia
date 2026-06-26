@@ -1,0 +1,41 @@
+# Ambiente e segredos
+.env
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Banco de dados local
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Flask / Werkzeug
+instance/
+.webassets-cache
+
+# Logs
+*.log
+flask.log
+.claude/

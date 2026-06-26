@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Recibo #{{ pg.id }} — Bela Odontologia{% endblock %}
+{% block page_title %}Recibo de Pagamento{% endblock %}
+
+{% block content %}
+<div class="no-print mb-3 d-flex gap-2">
+  <button onclick="window.print()" class="btn btn-primary btn-sm">
+    <i class="bi bi-printer me-1"></i> Imprimir
+  </button>
+  <a href="{{ url_for('consultas_detalhes', cid=pg.consulta_id) }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Voltar
+  </a>
+</div>
+
+<div class="card table-card" style="max-width:620px">
+  <div class="card-body p-4">
+    <!-- Cabeçalho -->
+    <div class="text-center mb-4 pb-3 border-bottom">
+      <i class="bi bi-tooth-fill text-primary fs-2"></i>
+      <h4 class="fw-bold mt-1 mb-0">Bela Odontologia</h4>
+      <small class="text-muted">Recibo de Pagamento</small>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-6">
+        <div class="text-muted small">Recibo Nº</div>
+        <div class="fw-bold">#{{ pg.id }}</div>
+      </div>
+      <div class="col-6 text-end">
+        <div class="text-muted small">Data de Emissão</div>
+        <div class="fw-bold">{{ pg.data_pagamento }}</div>
+      </div>
+    </div>
+
+    <hr>
+
+    <dl class="row small">
+      <dt class="col-4 text-muted">Paciente</dt>
+      <dd class="col-8 fw-semibold">{{ pg.paciente }}</dd>
+      {% if pg.cpf %}
+      <dt class="col-4 text-muted">CPF</dt>
+      <dd class="col-8">{{ pg.cpf }}</dd>
+      {% endif %}
+      {% if pg.endereco %}
+      <dt class="col-4 text-muted">Endereço</dt>
+      <dd class="col-8">{{ pg.endereco }}</dd>
+      {% endif %}
+      <dt class="col-4 text-muted">Dentista</dt>
+      <dd class="col-8">{{ pg.dentista }}{% if pg.cro %} — {{ pg.cro }}{% endif %}</dd>
+      <dt class="col-4 text-muted">Data Consulta</dt>
+      <dd class="col-8">{{ pg.data_hora | dt }}</dd>
+      <dt class="col-4 text-muted">Procedimento</dt>
+      <dd class="col-8">{{ pg.tipo_procedimento or '—' }}</dd>
+      <dt class="col-4 text-muted">Convênio</dt>
+      <dd class="col-8">{{ pg.convenio or 'Particular' }}</dd>
+      <dt class="col-4 text-muted">Forma Pag.</dt>
+      <dd class="col-8">{{ pg.forma_pagamento or '—' }}</dd>
+    </dl>
+
+    <hr>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <span class="fs-5 fw-semibold">Total Pago</span>
+      <span class="fs-4 fw-bold text-success">{{ pg.valor | brl }}</span>
+    </div>
+
+    <div class="text-center text-muted mt-5 pt-3 border-top" style="font-size:.8rem">
+      Documento emitido pelo Sistema Bela Odontologia<br>
+      <strong>{{ pg.dentista }}</strong>{% if pg.cro %} — CRO {{ pg.cro }}{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
