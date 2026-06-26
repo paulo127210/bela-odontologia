@@ -14,25 +14,49 @@
       <form class="d-flex flex-wrap gap-2 align-items-center" method="GET">
         <input type="month" name="mes" value="{{ mes }}" class="form-control form-control-sm" style="width:150px">
         <select name="status" class="form-select form-select-sm" style="width:130px">
-          <option value="">Todos</option>
-          <option value="pago" {{ 'selected' if status=='pago' }}>Pago</option>
+          <option value="">Todos status</option>
+          <option value="pago"     {{ 'selected' if status=='pago' }}>Pago</option>
           <option value="pendente" {{ 'selected' if status=='pendente' }}>Pendente</option>
         </select>
+        <select name="forma" class="form-select form-select-sm" style="width:160px">
+          <option value="">Todas formas</option>
+          <option value="PIX"               {{ 'selected' if forma=='PIX' }}>PIX</option>
+          <option value="Cartão de Crédito" {{ 'selected' if forma=='Cartão de Crédito' }}>Cartão de Crédito</option>
+          <option value="Cartão de Débito"  {{ 'selected' if forma=='Cartão de Débito' }}>Cartão de Débito</option>
+          <option value="Transferência Bancária" {{ 'selected' if forma=='Transferência Bancária' }}>Transferência</option>
+          <option value="Dinheiro"          {{ 'selected' if forma=='Dinheiro' }}>Dinheiro</option>
+          <option value="Convênio"          {{ 'selected' if forma=='Convênio' }}>Convênio</option>
+        </select>
         <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-filter"></i> Filtrar</button>
-        {% if mes or status %}<a href="{{ url_for('faturamento_lista') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></a>{% endif %}
+        {% if mes or status or forma %}
+          <a href="{{ url_for('faturamento_lista') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></a>
+        {% endif %}
       </form>
     </div>
   </div>
 </div>
 
 <div class="card table-card">
-  <div class="card-header"><i class="bi bi-cash-stack me-1"></i> Pagamentos</div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-cash-stack me-1"></i> Pagamentos</span>
+    <span class="badge bg-secondary">{{ pagamentos | length }} registro(s)</span>
+  </div>
   <div class="card-body p-0">
     {% if pagamentos %}
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr><th>#</th><th>Paciente</th><th>Procedimento</th><th>Forma</th><th>Convênio</th><th>Data</th><th>Valor</th><th>Status</th><th></th></tr>
+      <table class="table table-hover align-middle mb-0 small">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Paciente</th>
+            <th>Procedimento</th>
+            <th>Forma de Pagamento</th>
+            <th>Data</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>NF-e</th>
+            <th class="text-center">Ações</th>
+          </tr>
         </thead>
         <tbody>
           {% for pg in pagamentos %}
@@ -40,9 +64,27 @@
             <td class="text-muted">{{ pg.id }}</td>
             <td class="fw-semibold">{{ pg.paciente }}</td>
             <td>{{ pg.tipo_procedimento or '—' }}</td>
-            <td>{{ pg.forma_pagamento or '—' }}</td>
-            <td>{{ pg.convenio or 'Particular' }}</td>
-            <td>{{ pg.data_pagamento }}</td>
+            <td>
+              {% set f = pg.forma_pagamento or '' %}
+              {% if f == 'PIX' %}
+                <span class="badge rounded-pill" style="background:#d4edda;color:#155724">⚡ PIX</span>
+              {% elif f == 'Cartão de Crédito' %}
+                <span class="badge rounded-pill bg-primary">💳 Crédito
+                  {% if pg.parcelas and pg.parcelas > 1 %}{{ pg.parcelas }}x{% endif %}
+                </span>
+              {% elif f == 'Cartão de Débito' %}
+                <span class="badge rounded-pill bg-info text-dark">💳 Débito</span>
+              {% elif 'Bancária' in f %}
+                <span class="badge rounded-pill bg-warning text-dark">🏦 Transferência</span>
+              {% elif f == 'Dinheiro' %}
+                <span class="badge rounded-pill bg-secondary">💵 Dinheiro</span>
+              {% elif f == 'Convênio' %}
+                <span class="badge rounded-pill bg-danger">🛡 Convênio</span>
+              {% else %}
+                {{ f or '—' }}
+              {% endif %}
+            </td>
+            <td>{{ pg.data_pagamento | dt('%d/%m/%Y') }}</td>
             <td class="fw-semibold text-success">{{ pg.valor | brl }}</td>
             <td>
               <span class="badge {{ 'bg-success' if pg.status=='pago' else 'bg-warning text-dark' }}">
@@ -50,13 +92,36 @@
               </span>
             </td>
             <td>
-              <a href="{{ url_for('faturamento_recibo', pgid=pg.id) }}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-printer"></i>
-              </a>
+              {% if pg.nf_emitida %}
+                <span class="badge bg-success" title="NF-e Nº {{ '%06d' % pg.numero_nf }}">
+                  ✓ {{ '%06d' % pg.numero_nf }}
+                </span>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('faturamento_recibo', pgid=pg.id) }}"
+                   class="btn btn-outline-secondary" title="Recibo">
+                  <i class="bi bi-receipt"></i>
+                </a>
+                <a href="{{ url_for('faturamento_nota_fiscal', pgid=pg.id) }}"
+                   class="btn btn-outline-primary" title="Nota Fiscal">
+                  <i class="bi bi-file-earmark-text"></i> NF-e
+                </a>
+              </div>
             </td>
           </tr>
           {% endfor %}
         </tbody>
+        <tfoot class="table-light fw-bold">
+          <tr>
+            <td colspan="5" class="text-end">Total:</td>
+            <td class="text-success">{{ total | brl }}</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
     {% else %}

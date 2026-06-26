@@ -3,54 +3,227 @@
 {% block page_title %}Registrar Pagamento{% endblock %}
 
 {% block content %}
-<div class="card table-card" style="max-width:600px">
-  <div class="card-header"><i class="bi bi-cash me-1 text-success"></i> Pagamento — Consulta #{{ consulta.id }}</div>
+<div class="card table-card" style="max-width:680px">
+  <div class="card-header fw-semibold">
+    <i class="bi bi-cash-coin me-1 text-success"></i>
+    Pagamento — Consulta #{{ consulta.id }}
+  </div>
   <div class="card-body">
+
+    <!-- Resumo da consulta -->
     <div class="alert alert-light border mb-4 small">
-      <div class="row">
-        <div class="col-sm-6"><strong>Paciente:</strong> {{ consulta.paciente_nome }}</div>
-        <div class="col-sm-6"><strong>Procedimento:</strong> {{ consulta.tipo_procedimento or '—' }}</div>
+      <div class="row g-2">
+        <div class="col-sm-6"><i class="bi bi-person me-1"></i><strong>{{ consulta.paciente_nome }}</strong></div>
+        <div class="col-sm-6"><i class="bi bi-clipboard-pulse me-1"></i>{{ consulta.tipo_procedimento or '—' }}</div>
+        <div class="col-sm-6"><i class="bi bi-calendar3 me-1"></i>{{ consulta.data_hora | dt }}</div>
+        <div class="col-sm-6"><i class="bi bi-person-badge me-1"></i>{{ consulta.dentista_nome or '—' }}</div>
       </div>
     </div>
-    <form method="POST">
+
+    <form method="POST" id="formPag">
       <div class="row g-3">
+
+        <!-- Valor e Data -->
         <div class="col-md-6">
           <label class="form-label fw-semibold">Valor (R$) *</label>
-          <input type="number" name="valor" step="0.01" min="0" class="form-control" required placeholder="0,00">
+          <div class="input-group">
+            <span class="input-group-text">R$</span>
+            <input type="number" name="valor" id="valorBase" step="0.01" min="0"
+                   class="form-control" required placeholder="0,00"
+                   value="{{ consulta.preco_sugerido or '' }}">
+          </div>
         </div>
         <div class="col-md-6">
           <label class="form-label fw-semibold">Data do Pagamento *</label>
-          <input type="date" name="data_pagamento" class="form-control" required id="dataPagamento">
+          <input type="date" name="data_pagamento" class="form-control" required id="dataPag">
         </div>
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Forma de Pagamento</label>
-          <select name="forma_pagamento" class="form-select">
-            <option value="">Selecione…</option>
-            <option>Dinheiro</option>
-            <option>Cartão de Débito</option>
-            <option>Cartão de Crédito</option>
-            <option>PIX</option>
-            <option>Transferência</option>
-            <option>Convênio</option>
-          </select>
+
+        <!-- Forma de Pagamento -->
+        <div class="col-12">
+          <label class="form-label fw-semibold">Forma de Pagamento *</label>
+          <div class="row g-2" id="metodoBtns">
+            {% for m in [
+              ('pix',      'bi-qr-code-scan',  'PIX',                'text-success',  'border-success'),
+              ('credito',  'bi-credit-card',   'Cartão de Crédito',  'text-primary',  'border-primary'),
+              ('debito',   'bi-credit-card-2-front', 'Cartão de Débito', 'text-info', 'border-info'),
+              ('banco',    'bi-bank',          'Transferência/Banco', 'text-warning', 'border-warning'),
+              ('dinheiro', 'bi-cash-stack',    'Dinheiro',           'text-secondary','border-secondary'),
+              ('convenio', 'bi-shield-check',  'Convênio',           'text-danger',   'border-danger'),
+            ] %}
+            <div class="col-6 col-md-4">
+              <button type="button"
+                class="btn btn-outline-secondary w-100 metodo-btn py-3 {{ m[4] }}"
+                data-metodo="{{ m[0] }}"
+                onclick="selecionarMetodo('{{ m[0] }}')">
+                <i class="bi {{ m[1] }} fs-4 d-block {{ m[2] }}"></i>
+                <span class="small">{{ m[2] }}</span>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="forma_pagamento" id="formaInput" required>
         </div>
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Convênio</label>
-          <input type="text" name="convenio" class="form-control" placeholder="Deixe em branco para particular">
+
+        <!-- ── PIX ──────────────────────────────────────────── -->
+        <div id="bloco-pix" class="col-12 bloco-metodo d-none">
+          <div class="card border-success">
+            <div class="card-body py-3">
+              <div class="row g-2 align-items-center">
+                <div class="col-md-7">
+                  <label class="form-label fw-semibold text-success">Chave PIX da Clínica</label>
+                  <input type="text" name="chave_pix" class="form-control"
+                         value="bela.odontologia@pix.com" placeholder="CNPJ / e-mail / celular / chave aleatória">
+                  <div class="form-text">Informe ao paciente para transferência</div>
+                </div>
+                <div class="col-md-5 text-center">
+                  <!-- QR Code simulado -->
+                  <div class="border rounded p-2 d-inline-block" style="background:#fff">
+                    <svg width="90" height="90" viewBox="0 0 9 9" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="9" height="9" fill="white"/>
+                      <g fill="black">
+                        <rect x="0" y="0" width="3" height="3"/><rect x="1" y="1" width="1" height="1" fill="white"/>
+                        <rect x="6" y="0" width="3" height="3"/><rect x="7" y="1" width="1" height="1" fill="white"/>
+                        <rect x="0" y="6" width="3" height="3"/><rect x="1" y="7" width="1" height="1" fill="white"/>
+                        <rect x="4" y="0" width="1" height="1"/>
+                        <rect x="3" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/>
+                        <rect x="3" y="3" width="2" height="1"/>
+                        <rect x="4" y="4" width="1" height="1"/>
+                        <rect x="3" y="5" width="1" height="2"/>
+                        <rect x="5" y="5" width="1" height="1"/>
+                        <rect x="6" y="4" width="3" height="1"/>
+                        <rect x="6" y="6" width="1" height="1"/>
+                        <rect x="8" y="6" width="1" height="1"/>
+                        <rect x="7" y="7" width="1" height="1"/>
+                        <rect x="6" y="8" width="3" height="1"/>
+                      </g>
+                    </svg>
+                    <div class="text-muted" style="font-size:.65rem">QR Code PIX</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- ── Cartão de Crédito ─────────────────────────────── -->
+        <div id="bloco-credito" class="col-12 bloco-metodo d-none">
+          <div class="card border-primary">
+            <div class="card-body py-3">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Bandeira</label>
+                  <select name="bandeira_credito" class="form-select">
+                    <option value="">Selecione…</option>
+                    <option>Visa</option>
+                    <option>Mastercard</option>
+                    <option>Elo</option>
+                    <option>Hipercard</option>
+                    <option>American Express</option>
+                    <option>Cabal</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Parcelas</label>
+                  <select name="parcelas" id="parcelasSelect" class="form-select" onchange="calcularParcela()">
+                    <option value="1">1x sem juros</option>
+                    <option value="2">2x sem juros</option>
+                    <option value="3">3x sem juros</option>
+                    <option value="4">4x (2,99% a.m.)</option>
+                    <option value="5">5x (2,99% a.m.)</option>
+                    <option value="6">6x (2,99% a.m.)</option>
+                    <option value="7">7x (2,99% a.m.)</option>
+                    <option value="8">8x (2,99% a.m.)</option>
+                    <option value="9">9x (2,99% a.m.)</option>
+                    <option value="10">10x (2,99% a.m.)</option>
+                    <option value="11">11x (2,99% a.m.)</option>
+                    <option value="12">12x (2,99% a.m.)</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <div class="alert alert-info py-2 mb-0 small" id="infoParcela">
+                    Selecione as parcelas para ver o valor por parcela.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Cartão de Débito ──────────────────────────────── -->
+        <div id="bloco-debito" class="col-12 bloco-metodo d-none">
+          <div class="card border-info">
+            <div class="card-body py-3">
+              <label class="form-label fw-semibold">Bandeira</label>
+              <select name="bandeira_debito" class="form-select" style="max-width:280px">
+                <option value="">Selecione…</option>
+                <option>Visa Débito</option>
+                <option>Mastercard Débito</option>
+                <option>Elo Débito</option>
+                <option>Caixa</option>
+                <option>Banricompras</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Transferência Bancária ────────────────────────── -->
+        <div id="bloco-banco" class="col-12 bloco-metodo d-none">
+          <div class="card border-warning">
+            <div class="card-body py-3">
+              <div class="row g-2">
+                <div class="col-12">
+                  <label class="form-label fw-semibold text-warning">Dados Bancários para Transferência</label>
+                </div>
+                <div class="col-md-4">
+                  <input type="text" name="banco_nome" class="form-control" placeholder="Banco" value="Bradesco">
+                </div>
+                <div class="col-md-4">
+                  <input type="text" name="banco_agencia" class="form-control" placeholder="Agência" value="0001-5">
+                </div>
+                <div class="col-md-4">
+                  <input type="text" name="banco_conta" class="form-control" placeholder="Conta" value="12345-6">
+                </div>
+                <div class="col-12">
+                  <div class="form-text">Titular: Bela Odontologia LTDA — CNPJ 00.000.000/0001-00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Convênio ─────────────────────────────────────── -->
+        <div id="bloco-convenio" class="col-12 bloco-metodo d-none">
+          <div class="card border-danger">
+            <div class="card-body py-3">
+              <label class="form-label fw-semibold">Nome do Convênio</label>
+              <input type="text" name="convenio" class="form-control" placeholder="Ex: Unimed, Bradesco Saúde, Amil…">
+            </div>
+          </div>
+        </div>
+
+        <!-- Convênio (geral) -->
+        <div id="bloco-convenio-geral" class="col-12 d-none">
+          <input type="hidden" name="convenio" value="">
+        </div>
+
+        <!-- Status -->
         <div class="col-md-6">
-          <label class="form-label fw-semibold">Status</label>
+          <label class="form-label fw-semibold">Status do Pagamento</label>
           <select name="status" class="form-select">
             <option value="pago" selected>Pago</option>
             <option value="pendente">Pendente</option>
           </select>
         </div>
-      </div>
+
+      </div><!-- /row -->
+
       <div class="d-flex gap-2 mt-4">
-        <button type="submit" class="btn btn-success">
+        <button type="submit" class="btn btn-success" id="btnConfirmar" disabled>
           <i class="bi bi-check-circle me-1"></i> Confirmar Pagamento
         </button>
-        <a href="{{ url_for('consultas_detalhes', cid=consulta.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+        <a href="{{ url_for('consultas_detalhes', cid=consulta.id) }}" class="btn btn-outline-secondary">
+          Cancelar
+        </a>
       </div>
     </form>
   </div>
@@ -58,5 +231,76 @@
 {% endblock %}
 
 {% block scripts %}
-<script>document.getElementById('dataPagamento').valueAsDate = new Date();</script>
+<script>
+const TAXA_JUROS = 0.0299; // 2,99% ao mês a partir da 4ª parcela
+
+document.getElementById('dataPag').valueAsDate = new Date();
+
+function selecionarMetodo(metodo) {
+  // Oculta todos os blocos
+  document.querySelectorAll('.bloco-metodo').forEach(b => b.classList.add('d-none'));
+
+  // Remove active de todos os botões
+  document.querySelectorAll('.metodo-btn').forEach(b => {
+    b.classList.remove('active', 'fw-bold');
+    b.style.opacity = '0.6';
+  });
+
+  // Ativa o botão clicado
+  const btn = document.querySelector(`[data-metodo="${metodo}"]`);
+  btn.classList.add('active', 'fw-bold');
+  btn.style.opacity = '1';
+
+  // Mostra o bloco correspondente
+  const bloco = document.getElementById(`bloco-${metodo}`);
+  if (bloco) bloco.classList.remove('d-none');
+
+  // Mapeia metodo → label salvo no BD
+  const labels = {
+    pix:      'PIX',
+    credito:  'Cartão de Crédito',
+    debito:   'Cartão de Débito',
+    banco:    'Transferência Bancária',
+    dinheiro: 'Dinheiro',
+    convenio: 'Convênio',
+  };
+  document.getElementById('formaInput').value = labels[metodo] || metodo;
+  document.getElementById('btnConfirmar').disabled = false;
+
+  // Ajusta parcelas se crédito
+  if (metodo === 'credito') calcularParcela();
+}
+
+function calcularParcela() {
+  const valor = parseFloat(document.getElementById('valorBase').value) || 0;
+  const n     = parseInt(document.getElementById('parcelasSelect').value) || 1;
+  let total   = valor;
+  let parcela;
+
+  if (n <= 3) {
+    parcela = valor / n;
+  } else {
+    // juros compostos
+    const i = TAXA_JUROS;
+    const coef = (i * Math.pow(1+i, n)) / (Math.pow(1+i, n) - 1);
+    parcela = valor * coef;
+    total   = parcela * n;
+  }
+
+  const info = document.getElementById('infoParcela');
+  const fmt  = v => 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+  if (n <= 3) {
+    info.textContent = `${n}x de ${fmt(parcela)} sem juros = ${fmt(total)}`;
+    info.className = 'alert alert-success py-2 mb-0 small';
+  } else {
+    info.textContent = `${n}x de ${fmt(parcela)} com juros = Total ${fmt(total)} (2,99% a.m.)`;
+    info.className = 'alert alert-warning py-2 mb-0 small';
+  }
+}
+
+document.getElementById('valorBase').addEventListener('input', () => {
+  if (document.getElementById('formaInput').value === 'Cartão de Crédito') calcularParcela();
+});
+</script>
 {% endblock %}

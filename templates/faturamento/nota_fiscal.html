@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>NFS-e Nº {{ pg.numero_nf }} — Bela Odontologia</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; background: #f5f5f5; }
+    .nf-wrapper { max-width: 800px; margin: 20px auto; background: #fff; box-shadow: 0 0 12px rgba(0,0,0,.15); }
+    .nf-header { background: #003087; color: #fff; padding: 18px 24px; }
+    .nf-header h5 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: .5px; }
+    .nf-badge { background: #e8f0fe; border: 2px solid #003087; border-radius: 6px; padding: 8px 14px; text-align: center; }
+    .nf-badge .num { font-size: 1.5rem; font-weight: 800; color: #003087; }
+    .nf-section { padding: 14px 24px; border-bottom: 1px solid #e0e0e0; }
+    .nf-section:last-child { border-bottom: none; }
+    .nf-label { font-size: .72rem; text-transform: uppercase; color: #888; letter-spacing: .4px; }
+    .nf-value { font-size: .93rem; font-weight: 600; color: #222; }
+    .nf-total-box { background: #f0faf0; border: 2px solid #28a745; border-radius: 8px; padding: 14px 20px; }
+    .nf-total-box .valor { font-size: 1.9rem; font-weight: 800; color: #155724; }
+    .nf-footer { background: #f9f9f9; padding: 12px 24px; font-size: .75rem; color: #666; text-align: center; border-top: 2px solid #003087; }
+    .autent { background: #fffbea; border: 1px dashed #f0ad4e; border-radius: 6px; padding: 8px 14px; font-size: .78rem; }
+    .metodo-tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: .82rem; }
+    .tag-pix     { background: #d4edda; color: #155724; }
+    .tag-credito { background: #d1ecf1; color: #0c5460; }
+    .tag-debito  { background: #cce5ff; color: #004085; }
+    .tag-banco   { background: #fff3cd; color: #856404; }
+    .tag-outros  { background: #e2e3e5; color: #383d41; }
+    .qr-area { border: 1px solid #ccc; border-radius: 6px; padding: 10px; display: inline-block; text-align: center; }
+    @media print {
+      body { background: #fff; }
+      .nf-wrapper { box-shadow: none; margin: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Barra de ações (não imprime) -->
+<div class="no-print text-center py-3 bg-light border-bottom">
+  <button onclick="window.print()" class="btn btn-primary btn-sm me-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+      <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+      <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zm4 10H5a1 1 0 0 1-1-1v-1h6v1a1 1 0 0 1-1 1zM3 4V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1H3z"/>
+    </svg>
+    Imprimir / Salvar PDF
+  </button>
+  <a href="{{ url_for('faturamento_lista') }}" class="btn btn-outline-secondary btn-sm">
+    ← Voltar ao Faturamento
+  </a>
+</div>
+
+<div class="nf-wrapper">
+
+  <!-- Cabeçalho -->
+  <div class="nf-header d-flex justify-content-between align-items-center">
+    <div>
+      <div style="font-size:.75rem; opacity:.8; text-transform:uppercase; letter-spacing:.6px">Nota Fiscal de Serviço Eletrônica</div>
+      <h5>🦷 Bela Odontologia</h5>
+      <div style="font-size:.78rem; opacity:.85">
+        CNPJ: 00.000.000/0001-00 &nbsp;|&nbsp; CRM: SP-12345 &nbsp;|&nbsp;
+        Rua das Flores, 100 — São Paulo/SP
+      </div>
+    </div>
+    <div class="nf-badge text-dark bg-white">
+      <div style="font-size:.65rem; text-transform:uppercase; color:#003087">NFS-e</div>
+      <div class="num">{{ "%06d" % pg.numero_nf }}</div>
+      <div style="font-size:.7rem; color:#555">Série A</div>
+    </div>
+  </div>
+
+  <!-- Informações da NF -->
+  <div class="nf-section">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="nf-label">Data de Emissão</div>
+        <div class="nf-value">{{ pg.nf_emitida_em | dt('%d/%m/%Y %H:%M') }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="nf-label">Competência</div>
+        <div class="nf-value">{{ pg.data_pagamento.strftime('%m/%Y') if pg.data_pagamento and pg.data_pagamento.strftime is defined else pg.data_pagamento }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="nf-label">Código de Verificação</div>
+        <div class="nf-value" style="font-family:monospace">{{ "%s-%04d" % (pg.nf_emitida_em.strftime('%Y%m%d') if pg.nf_emitida_em else '20260101', pg.numero_nf) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tomador (Paciente) -->
+  <div class="nf-section" style="background:#fafafa">
+    <div class="fw-bold text-uppercase mb-2" style="font-size:.78rem; color:#003087; letter-spacing:.5px">
+      ▶ Tomador do Serviço (Paciente)
+    </div>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <div class="nf-label">Nome Completo</div>
+        <div class="nf-value">{{ pg.paciente }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="nf-label">CPF</div>
+        <div class="nf-value">{{ pg.cpf or 'Não informado' }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="nf-label">Convênio</div>
+        <div class="nf-value">{{ pg.convenio or 'Particular' }}</div>
+      </div>
+      {% if pg.endereco %}
+      <div class="col-12">
+        <div class="nf-label">Endereço</div>
+        <div class="nf-value">{{ pg.endereco }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Prestador (Dentista) -->
+  <div class="nf-section">
+    <div class="fw-bold text-uppercase mb-2" style="font-size:.78rem; color:#003087; letter-spacing:.5px">
+      ▶ Prestador do Serviço
+    </div>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <div class="nf-label">Responsável Técnico</div>
+        <div class="nf-value">{{ pg.dentista }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="nf-label">CRO</div>
+        <div class="nf-value">{{ pg.cro or '—' }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="nf-label">Especialidade</div>
+        <div class="nf-value">{{ pg.especialidade or 'Clínico Geral' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Serviço -->
+  <div class="nf-section" style="background:#fafafa">
+    <div class="fw-bold text-uppercase mb-2" style="font-size:.78rem; color:#003087; letter-spacing:.5px">
+      ▶ Descrição do Serviço
+    </div>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <div class="nf-label">Código do Serviço (LC116)</div>
+        <div class="nf-value">4.01 — Medicina e Biomedicina</div>
+      </div>
+      <div class="col-md-6">
+        <div class="nf-label">Procedimento Realizado</div>
+        <div class="nf-value">{{ pg.tipo_procedimento or 'Consulta/Tratamento Odontológico' }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="nf-label">Data da Consulta</div>
+        <div class="nf-value">{{ pg.data_hora | dt }}</div>
+      </div>
+      <div class="col-md-4">
+        <div class="nf-label">Local da Prestação</div>
+        <div class="nf-value">São Paulo — SP</div>
+      </div>
+      <div class="col-md-4">
+        <div class="nf-label">ISS Retido</div>
+        <div class="nf-value">Não</div>
+      </div>
+      <div class="col-12">
+        <div class="nf-label">Discriminação</div>
+        <div class="nf-value">
+          Serviços odontológicos referentes a {{ pg.tipo_procedimento or 'tratamento odontológico' }},
+          prestados pelo profissional {{ pg.dentista }}{% if pg.cro %} (CRO {{ pg.cro }}){% endif %},
+          ao paciente {{ pg.paciente }}, em {{ pg.data_hora | dt('%d/%m/%Y') }}.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagamento -->
+  <div class="nf-section">
+    <div class="fw-bold text-uppercase mb-2" style="font-size:.78rem; color:#003087; letter-spacing:.5px">
+      ▶ Pagamento
+    </div>
+    <div class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <div class="nf-label">Forma de Pagamento</div>
+        <div class="mt-1">
+          {% set forma = pg.forma_pagamento or '' %}
+          {% if 'PIX' in forma %}
+            <span class="metodo-tag tag-pix">⚡ PIX</span>
+          {% elif 'Crédito' in forma %}
+            <span class="metodo-tag tag-credito">💳 Crédito</span>
+          {% elif 'Débito' in forma %}
+            <span class="metodo-tag tag-debito">💳 Débito</span>
+          {% elif 'Bancária' in forma or 'Banco' in forma %}
+            <span class="metodo-tag tag-banco">🏦 Transferência</span>
+          {% else %}
+            <span class="metodo-tag tag-outros">{{ forma or '—' }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% if pg.bandeira %}
+      <div class="col-md-3">
+        <div class="nf-label">Bandeira</div>
+        <div class="nf-value">{{ pg.bandeira }}</div>
+      </div>
+      {% endif %}
+      {% if pg.parcelas and pg.parcelas > 1 %}
+      <div class="col-md-3">
+        <div class="nf-label">Parcelamento</div>
+        <div class="nf-value">{{ pg.parcelas }}x</div>
+      </div>
+      {% endif %}
+      {% if pg.chave_pix %}
+      <div class="col-md-6">
+        <div class="nf-label">Chave PIX</div>
+        <div class="nf-value" style="font-family:monospace">{{ pg.chave_pix }}</div>
+      </div>
+      {% endif %}
+      <div class="col-md-3">
+        <div class="nf-label">Data do Pagamento</div>
+        <div class="nf-value">{{ pg.data_pagamento | dt('%d/%m/%Y') }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total -->
+  <div class="nf-section">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <div class="row g-2 text-muted small">
+          <div class="col-6">Base de Cálculo ISS</div>
+          <div class="col-6 text-end fw-semibold text-dark">{{ pg.valor | brl }}</div>
+          <div class="col-6">Alíquota ISS</div>
+          <div class="col-6 text-end">5,00%</div>
+          <div class="col-6">Valor ISS</div>
+          <div class="col-6 text-end">{{ (pg.valor | float * 0.05) | brl }}</div>
+          <div class="col-6">Deduções</div>
+          <div class="col-6 text-end">R$ 0,00</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="nf-total-box text-center">
+          <div style="font-size:.78rem; text-transform:uppercase; color:#155724; letter-spacing:.5px">Valor Total do Serviço</div>
+          <div class="valor">{{ pg.valor | brl }}</div>
+          <div style="font-size:.72rem; color:#666" id="valorExtenso"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Autenticação -->
+  <div class="nf-section d-flex gap-3 align-items-start">
+    <div class="qr-area">
+      <svg width="70" height="70" viewBox="0 0 9 9" xmlns="http://www.w3.org/2000/svg">
+        <rect width="9" height="9" fill="white"/>
+        <g fill="black">
+          <rect x="0" y="0" width="3" height="3"/><rect x="1" y="1" width="1" height="1" fill="white"/>
+          <rect x="6" y="0" width="3" height="3"/><rect x="7" y="1" width="1" height="1" fill="white"/>
+          <rect x="0" y="6" width="3" height="3"/><rect x="1" y="7" width="1" height="1" fill="white"/>
+          <rect x="4" y="1" width="1" height="2"/><rect x="3" y="4" width="3" height="1"/>
+          <rect x="5" y="5" width="2" height="1"/><rect x="3" y="6" width="1" height="1"/>
+          <rect x="6" y="5" width="1" height="2"/><rect x="8" y="5" width="1" height="3"/>
+          <rect x="7" y="7" width="1" height="1"/>
+        </g>
+      </svg>
+      <div style="font-size:.6rem; text-align:center; color:#888">Verificar NF</div>
+    </div>
+    <div class="autent flex-grow-1">
+      <div class="fw-bold mb-1" style="color:#856404">Autenticidade</div>
+      <div>Este documento é uma representação simplificada da Nota Fiscal de Serviços Eletrônica (NFS-e).</div>
+      <div class="mt-1"><strong>NFS-e Nº:</strong> {{ "%06d" % pg.numero_nf }} &nbsp;|&nbsp;
+        <strong>Emissão:</strong> {{ pg.nf_emitida_em | dt('%d/%m/%Y %H:%M') }} &nbsp;|&nbsp;
+        <strong>Código:</strong> {{ "%s-%04d" % (pg.nf_emitida_em.strftime('%Y%m%d') if pg.nf_emitida_em else '20260101', pg.numero_nf) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Rodapé -->
+  <div class="nf-footer">
+    <strong>Bela Odontologia</strong> — CNPJ 00.000.000/0001-00<br>
+    Rua das Flores, 100, Centro — São Paulo/SP — CEP 01310-000<br>
+    Tel: (11) 3000-0000 &nbsp;|&nbsp; E-mail: contato@belaodontologia.com.br<br>
+    <div class="mt-1" style="color:#aaa">Documento gerado pelo Sistema Bela Odontologia em {{ now }}</div>
+  </div>
+
+</div>
+
+<script>
+// Valor por extenso (simplificado)
+function extenso(v) {
+  const reais = Math.floor(v);
+  const centavos = Math.round((v - reais) * 100);
+  const uns = ['','um','dois','três','quatro','cinco','seis','sete','oito','nove',
+               'dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+  const dez = ['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+  const cent = ['','cem','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+  function grupo(n) {
+    if (n === 0) return '';
+    if (n < 20) return uns[n];
+    const d = Math.floor(n/10), u = n%10, c = Math.floor(n/100);
+    if (n === 100) return 'cem';
+    if (n > 100) return cent[c] + (n%100 ? ' e ' + grupo(n%100) : '');
+    return dez[d] + (u ? ' e ' + uns[u] : '');
+  }
+  let txt = '';
+  if (reais > 0) txt += grupo(reais) + (reais === 1 ? ' real' : ' reais');
+  if (reais > 0 && centavos > 0) txt += ' e ';
+  if (centavos > 0) txt += grupo(centavos) + (centavos === 1 ? ' centavo' : ' centavos');
+  return txt ? txt.charAt(0).toUpperCase() + txt.slice(1) : 'Zero reais';
+}
+const val = parseFloat("{{ pg.valor }}".replace(',','.')) || 0;
+document.getElementById('valorExtenso').textContent = extenso(val);
+</script>
+</body>
+</html>

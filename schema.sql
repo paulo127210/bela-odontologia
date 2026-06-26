@@ -109,6 +109,14 @@ CREATE TABLE IF NOT EXISTS pagamentos (
     forma_pagamento VARCHAR(50),
     convenio        VARCHAR(80),
     status          VARCHAR(20)   NOT NULL DEFAULT 'pago',
+    -- campos de método de pagamento
+    parcelas        INT           NOT NULL DEFAULT 1,
+    bandeira        VARCHAR(30)   DEFAULT NULL,
+    chave_pix       VARCHAR(120)  DEFAULT NULL,
+    -- nota fiscal
+    numero_nf       INT           DEFAULT NULL,
+    nf_emitida      TINYINT(1)    NOT NULL DEFAULT 0,
+    nf_emitida_em   DATETIME      DEFAULT NULL,
     criado_em       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     INDEX idx_data_pag (data_pagamento),

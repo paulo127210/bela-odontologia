@@ -2,6 +2,7 @@
 Bela Odontologia — Aplicação Flask com MySQL
 """
 import os
+from datetime import datetime
 from flask import (Flask, render_template, request, redirect,
                    url_for, session, flash, g)
 from werkzeug.security import check_password_hash
@@ -356,27 +357,34 @@ def prontuarios_form(cid):
 def faturamento_lista():
     mes    = request.args.get('mes', '')
     status = request.args.get('status', '')
+    forma  = request.args.get('forma', '')
     sql = ("SELECT pg.*, c.tipo_procedimento, p.nome AS paciente "
            "FROM pagamentos pg "
            "JOIN consultas c ON c.id=pg.consulta_id "
            "JOIN pacientes p ON p.id=c.paciente_id WHERE 1=1 ")
     params = []
     if mes:
-        sql += " AND DATE_FORMAT(pg.data_pagamento,'%Y-%m')=%s"; params.append(mes)
+        sql += " AND DATE_FORMAT(pg.data_pagamento,'%%Y-%%m')=%s"; params.append(mes)
     if status:
         sql += " AND pg.status=%s"; params.append(status)
+    if forma:
+        sql += " AND pg.forma_pagamento=%s"; params.append(forma)
     sql += " ORDER BY pg.data_pagamento DESC"
     rows = q(sql, params)
     total = sum(float(r['valor']) for r in rows)
     return render_template('faturamento/lista.html',
-                           pagamentos=rows, total=total, mes=mes, status=status)
+                           pagamentos=rows, total=total, mes=mes, status=status, forma=forma)
 
 
 @app.route('/faturamento/novo/<int:cid>', methods=['GET', 'POST'])
 @login_required
 def faturamento_novo(cid):
-    consulta = q1("SELECT c.*, p.nome AS paciente_nome FROM consultas c "
-                  "JOIN pacientes p ON p.id=c.paciente_id WHERE c.id=%s", (cid,))
+    consulta = q1(
+        "SELECT c.*, p.nome AS paciente_nome, d.nome AS dentista_nome "
+        "FROM consultas c "
+        "JOIN pacientes p ON p.id=c.paciente_id "
+        "JOIN dentistas d ON d.id=c.dentista_id "
+        "WHERE c.id=%s", (cid,))
     if not consulta:
         flash('Consulta não encontrada.', 'danger')
         return redirect(url_for('faturamento_lista'))
@@ -385,10 +393,19 @@ def faturamento_novo(cid):
         return redirect(url_for('consultas_detalhes', cid=cid))
     if request.method == 'POST':
         f = request.form
-        exe("INSERT INTO pagamentos (consulta_id,valor,data_pagamento,forma_pagamento,convenio,status) "
-            "VALUES (%s,%s,%s,%s,%s,%s)",
-            (cid, f['valor'], f['data_pagamento'],
-             f['forma_pagamento'], f['convenio'], f['status']))
+        forma = f.get('forma_pagamento', '')
+        # Campos específicos por método
+        bandeira  = f.get('bandeira_credito') or f.get('bandeira_debito') or ''
+        parcelas  = int(f.get('parcelas', 1)) if 'Crédito' in forma else 1
+        chave_pix = f.get('chave_pix', '') if forma == 'PIX' else ''
+        convenio  = f.get('convenio', '')
+        exe(
+            "INSERT INTO pagamentos "
+            "(consulta_id,valor,data_pagamento,forma_pagamento,convenio,status,"
+            " parcelas,bandeira,chave_pix) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (cid, f['valor'], f['data_pagamento'], forma, convenio,
+             f.get('status','pago'), parcelas, bandeira, chave_pix))
         flash('Pagamento registrado!', 'success')
         return redirect(url_for('consultas_detalhes', cid=cid))
     return render_template('faturamento/form.html', consulta=consulta)
@@ -397,18 +414,45 @@ def faturamento_novo(cid):
 @app.route('/faturamento/recibo/<int:pgid>')
 @login_required
 def faturamento_recibo(pgid):
-    pg = q1("SELECT pg.*, c.tipo_procedimento, c.data_hora, "
-            "p.nome AS paciente, p.cpf, p.endereco, "
-            "d.nome AS dentista, d.cro "
-            "FROM pagamentos pg "
-            "JOIN consultas c ON c.id=pg.consulta_id "
-            "JOIN pacientes p ON p.id=c.paciente_id "
-            "JOIN dentistas d ON d.id=c.dentista_id "
-            "WHERE pg.id=%s", (pgid,))
+    pg = _get_pagamento_completo(pgid)
     if not pg:
         flash('Recibo não encontrado.', 'danger')
         return redirect(url_for('faturamento_lista'))
     return render_template('faturamento/recibo.html', pg=pg)
+
+
+@app.route('/faturamento/nota_fiscal/<int:pgid>')
+@login_required
+def faturamento_nota_fiscal(pgid):
+    from datetime import datetime as _dt
+    pg = _get_pagamento_completo(pgid)
+    if not pg:
+        flash('Pagamento não encontrado.', 'danger')
+        return redirect(url_for('faturamento_lista'))
+    # Gera número de NF se ainda não tem
+    if not pg.get('numero_nf'):
+        max_row = q1("SELECT COALESCE(MAX(numero_nf),0)+1 AS prox FROM pagamentos")
+        prox_nf = max_row['prox']
+        now = _dt.now()
+        exe("UPDATE pagamentos SET numero_nf=%s, nf_emitida=1, nf_emitida_em=%s WHERE id=%s",
+            (prox_nf, now, pgid))
+        pg['numero_nf']     = prox_nf
+        pg['nf_emitida']    = 1
+        pg['nf_emitida_em'] = now
+    return render_template('faturamento/nota_fiscal.html', pg=pg,
+                           now=datetime.now().strftime('%d/%m/%Y %H:%M'))
+
+
+def _get_pagamento_completo(pgid):
+    return q1(
+        "SELECT pg.*, c.tipo_procedimento, c.data_hora, "
+        "p.nome AS paciente, p.cpf, p.endereco, "
+        "d.nome AS dentista, d.cro, d.especialidade "
+        "FROM pagamentos pg "
+        "JOIN consultas c ON c.id=pg.consulta_id "
+        "JOIN pacientes p ON p.id=c.paciente_id "
+        "JOIN dentistas d ON d.id=c.dentista_id "
+        "WHERE pg.id=%s", (pgid,))
 
 
 # ---------------------------------------------------------------------------
