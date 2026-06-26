@@ -6,28 +6,23 @@ echo  =====================================================
 echo   BELA ODONTOLOGIA  -  Sistema de Gestao da Clinica
 echo  =====================================================
 echo.
-echo  Banco de dados: MySQL (bela_odontologia)
-echo  Servidor web  : http://localhost:5000
-echo.
-echo  Login padrao:
-echo    E-mail : admin@clinica.com
-echo    Senha  : admin123
-echo.
-echo  Pressione Ctrl+C para encerrar.
+echo  Servidor  : http://localhost:5000
+echo  Login     : admin@clinica.com  /  admin123
+echo  Encerrar  : Ctrl+C
 echo  =====================================================
 echo.
 
 set PYTHON=%USERPROFILE%\AppData\Roaming\uv\python\cpython-3.14.6-windows-x86_64-none\python.exe
 
 if not exist "%PYTHON%" (
-    echo [ERRO] Python nao encontrado em: %PYTHON%
-    echo Verifique a instalacao do Python e edite este arquivo.
-    pause
-    exit /b 1
+    echo [ERRO] Python nao encontrado: %PYTHON%
+    pause & exit /b 1
 )
 
-:: Abre o navegador apos 2 segundos
-start /b cmd /c "timeout /t 2 >nul && start http://localhost:5000"
+:: Abre o Chrome maximizado apos 2 segundos (em background)
+start /b powershell -WindowStyle Hidden -Command ^
+  "Start-Sleep 2; $chrome = 'C:\Program Files\Google\Chrome\Application\chrome.exe'; $edge = 'C:\Program Files\Microsoft\Edge\Application\msedge.exe'; if (Test-Path $chrome) { Start-Process $chrome '--start-maximized http://localhost:5000' } elseif (Test-Path $edge) { Start-Process $edge '--start-maximized http://localhost:5000' } else { Start-Process 'http://localhost:5000' }"
 
+:: Inicia o servidor Flask
 "%PYTHON%" app.py
 pause
