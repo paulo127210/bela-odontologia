@@ -500,7 +500,15 @@ def relatorios():
 @app.route('/dentistas')
 @login_required
 def dentistas_lista():
-    rows = q("SELECT * FROM dentistas ORDER BY nome")
+    rows = q(
+        "SELECT d.*, "
+        "  COUNT(c.id)                                             AS total_consultas, "
+        "  SUM(c.status='concluida')                              AS consultas_concluidas, "
+        "  SUM(c.status='agendada')                               AS consultas_agendadas "
+        "FROM dentistas d "
+        "LEFT JOIN consultas c ON c.dentista_id=d.id "
+        "GROUP BY d.id ORDER BY d.ativo DESC, d.nome"
+    )
     return render_template('dentistas/lista.html', dentistas=rows)
 
 
@@ -535,8 +543,31 @@ def dentistas_editar(did):
 @app.route('/dentistas/<int:did>/excluir', methods=['POST'])
 @login_required
 def dentistas_excluir(did):
+    dentista = q1("SELECT nome FROM dentistas WHERE id=%s", (did,))
+    if not dentista:
+        flash('Dentista não encontrado.', 'danger')
+        return redirect(url_for('dentistas_lista'))
+    consultas = q1("SELECT COUNT(*) AS n FROM consultas WHERE dentista_id=%s", (did,))
+    if consultas and consultas['n'] > 0:
+        flash(f'Não é possível excluir {dentista["nome"]} — possui {consultas["n"]} consulta(s) vinculada(s). '
+              f'Desative-o ao invés de excluir.', 'warning')
+        return redirect(url_for('dentistas_lista'))
     exe("DELETE FROM dentistas WHERE id=%s", (did,))
-    flash('Dentista excluído.', 'info')
+    flash(f'Dentista {dentista["nome"]} excluído.', 'info')
+    return redirect(url_for('dentistas_lista'))
+
+
+@app.route('/dentistas/<int:did>/toggle', methods=['POST'])
+@login_required
+def dentistas_toggle(did):
+    dentista = q1("SELECT nome, ativo FROM dentistas WHERE id=%s", (did,))
+    if not dentista:
+        flash('Dentista não encontrado.', 'danger')
+        return redirect(url_for('dentistas_lista'))
+    novo = 0 if dentista['ativo'] else 1
+    exe("UPDATE dentistas SET ativo=%s WHERE id=%s", (novo, did))
+    status = 'ativado' if novo else 'desativado'
+    flash(f'{dentista["nome"]} {status}.', 'success')
     return redirect(url_for('dentistas_lista'))
 
 
