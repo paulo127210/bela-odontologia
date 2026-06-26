@@ -1,13 +1,16 @@
 :root {
-    --primary: #0d6efd;
-    --sidebar-bg: #1a1f36;
+    --primary:      #8b2fc9;        /* roxo da marca */
+    --primary-dark: #6a1f9e;
+    --gold:         #b8860b;        /* dourado do logo */
+    --sidebar-bg:   #1e0a2e;        /* roxo bem escuro */
     --sidebar-width: 255px;
     --topbar-height: 60px;
 }
 
 /* ---------- Layout ---------- */
-body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+body { background: #f4f0f8; font-family: 'Segoe UI', sans-serif; }
 
+/* ---------- SIDEBAR ---------- */
 #sidebar {
     width: var(--sidebar-width);
     min-height: 100vh;
@@ -20,32 +23,40 @@ body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
     transition: transform .25s ease;
 }
 
+/* Logo no topo */
 #sidebar .brand {
-    padding: 20px 20px 10px;
+    padding: 16px 14px 12px;
     border-bottom: 1px solid rgba(255,255,255,.08);
+    text-align: center;
 }
 
-#sidebar .brand h5 {
-    color: #fff;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: .5px;
-    margin: 0;
+#sidebar .brand img {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    border-radius: 10px;
+    object-fit: contain;
 }
 
-#sidebar .brand small { color: #8892b0; font-size: .7rem; }
+#sidebar .brand small {
+    display: block;
+    color: #c9a7e8;
+    font-size: .68rem;
+    margin-top: 4px;
+    letter-spacing: .3px;
+}
 
 #sidebar .nav-section {
     padding: 8px 16px 2px;
     font-size: .65rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #8892b0;
+    color: #9b72c0;
     margin-top: 10px;
 }
 
 #sidebar .nav-link {
-    color: #a8b2d8;
+    color: #cbb8e0;
     padding: 9px 20px;
     display: flex;
     align-items: center;
@@ -59,7 +70,7 @@ body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
 
 #sidebar .nav-link:hover,
 #sidebar .nav-link.active {
-    background: rgba(255,255,255,.1);
+    background: rgba(139,47,201,.35);
     color: #fff;
 }
 
@@ -84,6 +95,7 @@ body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
     position: sticky;
     top: 0;
     z-index: 900;
+    box-shadow: 0 1px 4px rgba(139,47,201,.08);
 }
 
 .topbar .page-title {
@@ -144,7 +156,7 @@ body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
 }
 
 .table thead th {
-    background: #f8f9fa;
+    background: #f8f5fc;
     font-size: .75rem;
     text-transform: uppercase;
     letter-spacing: .5px;
@@ -164,20 +176,39 @@ body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
 /* ---------- Login page ---------- */
 .login-wrapper {
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a1f36 0%, #0d6efd 100%);
+    background: linear-gradient(135deg, #1e0a2e 0%, #7b1fa2 60%, #9c27b0 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
 }
 
 .login-card {
     background: #fff;
-    border-radius: 16px;
-    padding: 40px;
+    border-radius: 20px;
+    padding: 40px 36px;
     width: 100%;
     max-width: 420px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    box-shadow: 0 24px 64px rgba(0,0,0,.35);
 }
+
+.login-logo {
+    width: 200px;
+    height: auto;
+    border-radius: 12px;
+}
+
+/* Botões com cor da marca */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+.btn-outline-primary { color: var(--primary); border-color: var(--primary); }
+.btn-outline-primary:hover { background-color: var(--primary); border-color: var(--primary); }
 
 /* ---------- Sidebar toggler (mobile) ---------- */
 @media (max-width: 768px) {
@@ -186,7 +217,7 @@ body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
     .main-content { margin-left: 0; }
 }
 
-/* ---------- Recibo ---------- */
+/* ---------- Print ---------- */
 @media print {
     #sidebar, .topbar, .no-print { display: none !important; }
     .main-content { margin-left: 0; }

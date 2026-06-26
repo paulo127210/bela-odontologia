@@ -107,7 +107,11 @@
   <div class="nf-header d-flex justify-content-between align-items-start">
     <div>
       <div style="font-size:.68rem; opacity:.7; letter-spacing:.5px; text-transform:uppercase">Prestador de Serviços</div>
-      <h4>🦷 Bela Odontologia LTDA</h4>
+      <div class="d-flex align-items-center gap-3 mb-1">
+        <img src="{{ url_for('static', filename='img/logo.jpg') }}"
+             alt="Logo" style="height:52px;border-radius:8px">
+        <h4 class="mb-0">Bela Odontologia LTDA</h4>
+      </div>
       <div class="sub">
         CNPJ: <strong>12.456.789/0001-06</strong> &nbsp;|&nbsp;
         Inscrição Municipal: 7.258.093-3<br>
