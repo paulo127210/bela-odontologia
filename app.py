@@ -90,7 +90,7 @@ def exe(sql, params=()):
 
 
 @app.teardown_appcontext
-def close_db(e=None):
+def close_db(_e=None):
     conn = g.pop('mysql_conn', None)
     if conn:
         conn.close()
@@ -170,16 +170,33 @@ def pacientes_lista():
     return render_template('pacientes/lista.html', pacientes=rows, q=busca)
 
 
+def _montar_endereco(f):
+    """Monta string de endereço completo a partir dos campos do formulário."""
+    partes = []
+    if f.get('logradouro'): partes.append(f['logradouro'])
+    if f.get('numero'):     partes[-1] = partes[-1] + ', ' + f['numero'] if partes else f['numero']
+    if f.get('complemento'): partes.append(f['complemento'])
+    if f.get('bairro'):     partes.append(f['bairro'])
+    cidade_uf = ' — '.join(filter(None, [f.get('cidade'), f.get('uf')]))
+    if cidade_uf: partes.append(cidade_uf)
+    if f.get('cep'):        partes.append('CEP ' + f['cep'])
+    return ', '.join(partes)
+
+
 @app.route('/pacientes/novo', methods=['GET', 'POST'])
 @login_required
 def pacientes_novo():
     if request.method == 'POST':
         f = request.form
-        exe("INSERT INTO pacientes (nome,data_nascimento,cpf,endereco,telefone,email,convenio,historico_medico) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+        endereco = _montar_endereco(f)
+        exe("INSERT INTO pacientes "
+            "(nome,data_nascimento,cpf,endereco,cep,logradouro,numero,complemento,bairro,cidade,uf,"
+            " telefone,email,convenio,historico_medico) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (f['nome'], f['data_nascimento'] or None, f['cpf'],
-             f['endereco'], f['telefone'], f['email'],
-             f['convenio'], f['historico_medico']))
+             endereco, f.get('cep'), f.get('logradouro'), f.get('numero'),
+             f.get('complemento'), f.get('bairro'), f.get('cidade'), f.get('uf'),
+             f['telefone'], f['email'], f['convenio'], f['historico_medico']))
         flash('Paciente cadastrado com sucesso!', 'success')
         return redirect(url_for('pacientes_lista'))
     return render_template('pacientes/form.html', paciente=None)
@@ -207,11 +224,14 @@ def pacientes_editar(pid):
         return redirect(url_for('pacientes_lista'))
     if request.method == 'POST':
         f = request.form
+        endereco = _montar_endereco(f)
         exe("UPDATE pacientes SET nome=%s,data_nascimento=%s,cpf=%s,endereco=%s,"
+            "cep=%s,logradouro=%s,numero=%s,complemento=%s,bairro=%s,cidade=%s,uf=%s,"
             "telefone=%s,email=%s,convenio=%s,historico_medico=%s WHERE id=%s",
             (f['nome'], f['data_nascimento'] or None, f['cpf'],
-             f['endereco'], f['telefone'], f['email'],
-             f['convenio'], f['historico_medico'], pid))
+             endereco, f.get('cep'), f.get('logradouro'), f.get('numero'),
+             f.get('complemento'), f.get('bairro'), f.get('cidade'), f.get('uf'),
+             f['telefone'], f['email'], f['convenio'], f['historico_medico'], pid))
         flash('Paciente atualizado!', 'success')
         return redirect(url_for('pacientes_detalhes', pid=pid))
     return render_template('pacientes/form.html', paciente=p)

@@ -11,45 +11,52 @@
 </head>
 <body>
 
+<!-- Overlay para fechar sidebar no mobile -->
+<div id="sidebarOverlay"></div>
+
 <!-- ===== SIDEBAR ===== -->
 <nav id="sidebar">
   <div class="brand">
     <img src="{{ url_for('static', filename='img/logo.jpg') }}"
-         alt="Bela Odontologia" class="img-fluid">
-    <small>Sistema de Gestão</small>
+         alt="Bela Odontologia" class="img-fluid logo-img">
+    <small class="sidebar-label">Sistema de Gestão</small>
   </div>
 
   <div class="flex-grow-1 overflow-auto pt-1">
-    <div class="nav-section">Principal</div>
+    <div class="nav-section sidebar-label">Principal</div>
     <a href="{{ url_for('dashboard') }}" class="nav-link">
-      <i class="bi bi-speedometer2"></i> Dashboard
+      <i class="bi bi-speedometer2"></i><span class="sidebar-label"> Dashboard</span>
     </a>
 
-    <div class="nav-section">Clínica</div>
+    <div class="nav-section sidebar-label">Clínica</div>
     <a href="{{ url_for('pacientes_lista') }}" class="nav-link">
-      <i class="bi bi-people"></i> Pacientes
+      <i class="bi bi-people"></i><span class="sidebar-label"> Pacientes</span>
     </a>
     <a href="{{ url_for('consultas_lista') }}" class="nav-link">
-      <i class="bi bi-calendar-check"></i> Consultas
+      <i class="bi bi-calendar-check"></i><span class="sidebar-label"> Consultas</span>
     </a>
     <a href="{{ url_for('dentistas_lista') }}" class="nav-link">
-      <i class="bi bi-person-badge"></i> Dentistas
+      <i class="bi bi-person-badge"></i><span class="sidebar-label"> Dentistas</span>
     </a>
 
-    <div class="nav-section">Financeiro</div>
+    <div class="nav-section sidebar-label">Financeiro</div>
     <a href="{{ url_for('faturamento_lista') }}" class="nav-link">
-      <i class="bi bi-cash-stack"></i> Faturamento
+      <i class="bi bi-cash-stack"></i><span class="sidebar-label"> Faturamento</span>
     </a>
 
-    <div class="nav-section">Análises</div>
+    <div class="nav-section sidebar-label">Análises</div>
     <a href="{{ url_for('relatorios') }}" class="nav-link">
-      <i class="bi bi-bar-chart-line"></i> Relatórios
+      <i class="bi bi-bar-chart-line"></i><span class="sidebar-label"> Relatórios</span>
     </a>
   </div>
 
-  <div class="p-3 border-top border-secondary">
+  <div class="sidebar-footer">
+    <div class="user-mini d-flex align-items-center gap-2 mb-2 sidebar-label-block">
+      <div class="user-avatar-sm">{{ session.usuario_nome[0] | upper }}</div>
+      <span class="small text-truncate" style="color:#c9b8e0">{{ session.usuario_nome }}</span>
+    </div>
     <a href="{{ url_for('logout') }}" class="nav-link text-danger">
-      <i class="bi bi-box-arrow-left"></i> Sair
+      <i class="bi bi-box-arrow-left"></i><span class="sidebar-label"> Sair</span>
     </a>
   </div>
 </nav>
@@ -59,7 +66,7 @@
   <!-- Topbar -->
   <div class="topbar">
     <div class="d-flex align-items-center gap-3">
-      <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary d-md-none">
+      <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-list fs-5"></i>
       </button>
       <h6 class="page-title">{% block page_title %}{% endblock %}</h6>
@@ -87,6 +94,25 @@
     {% block content %}{% endblock %}
   </div>
 </div>
+
+<!-- Barra de navegação inferior (mobile) -->
+<nav class="mobile-nav">
+  <a href="{{ url_for('dashboard') }}">
+    <i class="bi bi-speedometer2"></i>Dashboard
+  </a>
+  <a href="{{ url_for('pacientes_lista') }}">
+    <i class="bi bi-people"></i>Pacientes
+  </a>
+  <a href="{{ url_for('consultas_lista') }}">
+    <i class="bi bi-calendar-check"></i>Consultas
+  </a>
+  <a href="{{ url_for('faturamento_lista') }}">
+    <i class="bi bi-cash-stack"></i>Faturamento
+  </a>
+  <a href="{{ url_for('relatorios') }}">
+    <i class="bi bi-bar-chart-line"></i>Relatórios
+  </a>
+</nav>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>

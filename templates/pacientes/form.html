@@ -4,62 +4,148 @@
 {% block page_title %}{{ 'Editar' if is_edit else 'Novo' }} Paciente{% endblock %}
 
 {% block content %}
-<div class="card table-card" style="max-width:760px">
+<div class="card table-card" style="max-width:800px">
   <div class="card-header">
     <i class="bi bi-person-{{ 'pencil' if is_edit else 'plus' }} me-1"></i>
     {{ 'Editar dados de ' + paciente.nome if is_edit else 'Cadastrar novo paciente' }}
   </div>
   <div class="card-body">
-    <form method="POST">
+    <form method="POST" id="formPaciente">
+
+      <!-- ── Dados pessoais ─────────────────────────────── -->
+      <div class="form-section-title">Dados Pessoais</div>
       <div class="row g-3">
         <div class="col-md-8">
-          <label class="form-label">Nome completo *</label>
+          <label class="form-label fw-semibold">Nome completo *</label>
           <input type="text" name="nome" class="form-control" required
-                 value="{{ paciente.nome if is_edit else '' }}">
+                 value="{{ paciente.nome if is_edit else '' }}"
+                 placeholder="Nome Sobrenome">
         </div>
         <div class="col-md-4">
-          <label class="form-label">Data de Nascimento</label>
+          <label class="form-label fw-semibold">Data de Nascimento</label>
           <input type="date" name="data_nascimento" class="form-control"
                  value="{{ paciente.data_nascimento if is_edit else '' }}">
         </div>
         <div class="col-md-4">
-          <label class="form-label">CPF</label>
+          <label class="form-label fw-semibold">CPF</label>
           <input type="text" name="cpf" class="form-control" placeholder="000.000.000-00"
                  value="{{ paciente.cpf if is_edit else '' }}">
         </div>
         <div class="col-md-4">
-          <label class="form-label">Telefone</label>
+          <label class="form-label fw-semibold">Telefone</label>
           <input type="text" name="telefone" class="form-control" placeholder="(00) 00000-0000"
                  value="{{ paciente.telefone if is_edit else '' }}">
         </div>
         <div class="col-md-4">
-          <label class="form-label">E-mail</label>
+          <label class="form-label fw-semibold">E-mail</label>
           <input type="email" name="email" class="form-control"
                  value="{{ paciente.email if is_edit else '' }}">
         </div>
-        <div class="col-12">
-          <label class="form-label">Endereço</label>
-          <input type="text" name="endereco" class="form-control"
-                 value="{{ paciente.endereco if is_edit else '' }}">
+      </div>
+
+      <!-- ── Endereço ───────────────────────────────────── -->
+      <div class="form-section-title mt-4">Endereço</div>
+      <div class="row g-3">
+
+        <!-- CEP com busca automática -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">CEP</label>
+          <div class="d-flex align-items-center">
+            <input type="text" name="cep" id="cep" class="form-control"
+                   placeholder="00000-000" maxlength="9"
+                   value="{{ paciente.cep if is_edit else '' }}"
+                   data-cep-input
+                   data-fill-logradouro="#logradouro"
+                   data-fill-bairro="#bairro"
+                   data-fill-cidade="#cidade"
+                   data-fill-uf="#uf">
+          </div>
         </div>
+
+        <!-- Logradouro -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Logradouro</label>
+          <input type="text" id="logradouro" name="logradouro" class="form-control"
+                 placeholder="Rua / Av. / Alameda…"
+                 value="{{ paciente.logradouro if is_edit and paciente.logradouro else '' }}">
+        </div>
+
+        <!-- Número -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Número</label>
+          <input type="text" name="numero" class="form-control" placeholder="123"
+                 data-cep-numero
+                 value="{{ paciente.numero if is_edit and paciente.numero else '' }}">
+        </div>
+
+        <!-- Complemento -->
         <div class="col-md-4">
-          <label class="form-label">Convênio</label>
+          <label class="form-label fw-semibold">Complemento</label>
+          <input type="text" name="complemento" class="form-control" placeholder="Apto, Sala, Bloco…"
+                 value="{{ paciente.complemento if is_edit and paciente.complemento else '' }}">
+        </div>
+
+        <!-- Bairro -->
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Bairro</label>
+          <input type="text" id="bairro" name="bairro" class="form-control"
+                 placeholder="Nome do bairro"
+                 value="{{ paciente.bairro if is_edit and paciente.bairro else '' }}">
+        </div>
+
+        <!-- Cidade -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Cidade</label>
+          <input type="text" id="cidade" name="cidade" class="form-control"
+                 placeholder="Cidade"
+                 value="{{ paciente.cidade if is_edit and paciente.cidade else '' }}">
+        </div>
+
+        <!-- UF -->
+        <div class="col-md-1">
+          <label class="form-label fw-semibold">UF</label>
+          <input type="text" id="uf" name="uf" class="form-control text-center"
+                 placeholder="SP" maxlength="2"
+                 value="{{ paciente.uf if is_edit and paciente.uf else '' }}">
+        </div>
+
+      </div>
+
+      <!-- ── Informações clínicas ───────────────────────── -->
+      <div class="form-section-title mt-4">Informações Clínicas</div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Convênio</label>
           <input type="text" name="convenio" class="form-control" placeholder="Particular"
                  value="{{ paciente.convenio if is_edit else '' }}">
         </div>
         <div class="col-12">
-          <label class="form-label">Histórico Médico / Alergias</label>
+          <label class="form-label fw-semibold">Histórico Médico / Alergias</label>
           <textarea name="historico_medico" class="form-control" rows="3"
                     placeholder="Condições médicas, alergias a medicamentos…">{{ paciente.historico_medico if is_edit else '' }}</textarea>
         </div>
       </div>
+
       <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-primary">
           <i class="bi bi-floppy me-1"></i> Salvar
         </button>
         <a href="{{ url_for('pacientes_lista') }}" class="btn btn-outline-secondary">Cancelar</a>
       </div>
+
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Pré-busca o CEP se já existir no formulário (modo edição)
+window.addEventListener('DOMContentLoaded', () => {
+  const cepEl = document.getElementById('cep');
+  if (cepEl && cepEl.value.replace(/\D/g,'').length === 8) {
+    // Não rebusca em edição — já tem os campos preenchidos
+  }
+});
+</script>
 {% endblock %}
