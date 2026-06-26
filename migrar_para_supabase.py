@@ -50,7 +50,7 @@ for arq in ['app.py', 'database.py', 'requirements.txt']:
         shutil.copy2(dst, bkp)
         print(f"  Backup: {arq}.mysql.bak")
     shutil.copy2(src, dst)
-    print(f"  Copiado: supabase/{arq} → {arq}")
+    print(f"  Copiado: supabase/{arq} -> {arq}")
 
 # ── 4. Testar conexão ───────────────────────────────────────
 passo(4, "Testando conexão com Supabase")
