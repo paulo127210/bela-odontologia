@@ -72,6 +72,7 @@ a.back:hover{color:#fff;}
       Vamos lembrar seu CPF de acesso.
     </p>
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-4">
         <label class="form-label small" style="color:rgba(255,255,255,.6)">E-mail ou Celular</label>
         <input type="text" name="contato" class="form-control form-control-lg" required

@@ -52,6 +52,7 @@ body { background: linear-gradient(135deg,#1e0a2e,#7b1fa2 65%,#9c27b0); min-heig
     <!-- Formulário -->
     <p class="text-muted small mb-4">Informe o e-mail cadastrado do administrador. Uma senha temporária será gerada.</p>
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-3">
         <label class="form-label fw-semibold">E-mail do administrador</label>
         <input type="email" name="email" class="form-control form-control-lg" required
