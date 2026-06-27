@@ -27,7 +27,7 @@
         <div class="col-md-4">
           <label class="form-label">Data e Hora *</label>
           <input type="datetime-local" name="data_hora" class="form-control" required
-                 value="{{ consulta.data_hora | dt_input if is_edit else '' }}">
+                 value="{{ consulta.data_hora | dt_input if is_edit else (request.args.get('data_hora','')) }}">
         </div>
         <div class="col-md-8">
           <label class="form-label">Dentista *</label>

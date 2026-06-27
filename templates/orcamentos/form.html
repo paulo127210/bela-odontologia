@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}Novo Orçamento — Bela Odontologia{% endblock %}
+{% block page_title %}Novo Orçamento{% endblock %}
+
+{% block content %}
+<div class="card table-card" style="max-width:860px">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-file-earmark-text me-1 text-primary"></i> Novo Orçamento</span>
+    <a href="{{ url_for('orcamentos_lista') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  <div class="card-body">
+    <form method="POST" id="formOrc">
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Paciente *</label>
+          <select name="paciente_id" class="form-select" required>
+            <option value="">Selecione…</option>
+            {% for p in pacientes %}
+            <option value="{{ p.id }}" {{ 'selected' if pre_paciente and pre_paciente|int==p.id }}>{{ p.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Dentista Responsável *</label>
+          <select name="dentista_id" class="form-select" required>
+            <option value="">Selecione…</option>
+            {% for d in dentistas %}
+            <option value="{{ d.id }}">{{ d.nome }} — {{ d.especialidade }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Validade do Orçamento</label>
+          <input type="date" name="validade" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Descrição Geral</label>
+          <input type="text" name="descricao" class="form-control" placeholder="Ex: Tratamento ortodôntico completo">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Observações</label>
+          <textarea name="observacoes" class="form-control" rows="2" placeholder="Condições, forma de pagamento, observações clínicas…"></textarea>
+        </div>
+      </div>
+
+      <!-- Itens do orçamento -->
+      <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="bi bi-list-ol me-1"></i> Itens / Procedimentos</h6>
+      <div id="itens">
+        <div class="row g-2 mb-2 item-linha">
+          <div class="col-md-5">
+            <input type="text" name="proc[]" class="form-control form-control-sm" placeholder="Procedimento" list="proc-list" required>
+          </div>
+          <div class="col-md-2">
+            <input type="number" name="qtd[]" class="form-control form-control-sm qtd" placeholder="Qtd" min="1" value="1" required>
+          </div>
+          <div class="col-md-3">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">R$</span>
+              <input type="number" name="vunit[]" class="form-control vunit" placeholder="Valor unit." min="0" step="0.01" required>
+            </div>
+          </div>
+          <div class="col-md-1 vtotal-col fw-semibold small d-flex align-items-center text-success">R$ 0,00</div>
+          <div class="col-md-1 d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remover-item"><i class="bi bi-trash"></i></button>
+          </div>
+        </div>
+      </div>
+      <datalist id="proc-list">
+        <option>Consulta de Avaliação</option><option>Limpeza / Profilaxia</option>
+        <option>Restauração</option><option>Extração Simples</option>
+        <option>Extração de Siso</option><option>Tratamento de Canal</option>
+        <option>Implante</option><option>Ortodontia</option>
+        <option>Clareamento Dental</option><option>Prótese</option>
+        <option>Radiografia</option>
+      </datalist>
+
+      <button type="button" id="addItem" class="btn btn-sm btn-outline-primary mt-2">
+        <i class="bi bi-plus-circle me-1"></i> Adicionar Procedimento
+      </button>
+
+      <!-- Total -->
+      <div class="d-flex justify-content-end mt-4">
+        <div class="card border-success" style="min-width:220px">
+          <div class="card-body py-2 px-3 text-end">
+            <div class="text-muted small">TOTAL DO ORÇAMENTO</div>
+            <div class="fs-4 fw-bold text-success" id="totalGeral">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i> Salvar Orçamento</button>
+        <a href="{{ url_for('orcamentos_lista') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fmt(v){ return 'R$ ' + parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function recalcLinha(linha) {
+  const qtd   = parseFloat(linha.querySelector('.qtd').value)  || 0;
+  const vunit = parseFloat(linha.querySelector('.vunit').value) || 0;
+  linha.querySelector('.vtotal-col').textContent = fmt(qtd * vunit);
+}
+
+function recalcTotal() {
+  let total = 0;
+  document.querySelectorAll('.item-linha').forEach(function(l) {
+    const qtd   = parseFloat(l.querySelector('.qtd').value)  || 0;
+    const vunit = parseFloat(l.querySelector('.vunit').value) || 0;
+    total += qtd * vunit;
+    l.querySelector('.vtotal-col').textContent = fmt(qtd * vunit);
+  });
+  document.getElementById('totalGeral').textContent = fmt(total);
+}
+
+document.getElementById('itens').addEventListener('input', recalcTotal);
+
+document.getElementById('addItem').addEventListener('click', function() {
+  const tmpl = document.querySelector('.item-linha').cloneNode(true);
+  tmpl.querySelectorAll('input').forEach(i => { if(i.type!='hidden') i.value = i.name.includes('qtd') ? 1 : ''; });
+  tmpl.querySelector('.vtotal-col').textContent = 'R$ 0,00';
+  document.getElementById('itens').appendChild(tmpl);
+});
+
+document.getElementById('itens').addEventListener('click', function(e) {
+  if (e.target.closest('.remover-item')) {
+    const linhas = document.querySelectorAll('.item-linha');
+    if (linhas.length > 1) { e.target.closest('.item-linha').remove(); recalcTotal(); }
+  }
+});
+</script>
+{% endblock %}

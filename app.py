@@ -47,6 +47,19 @@ def fmt_dt_input(value):
     return str(value)[:16]
 
 
+@app.template_filter('dt')
+def fmt_dt(value, fmt='%d/%m/%Y %H:%M'):
+    if value is None:
+        return '—'
+    if hasattr(value, 'strftime'):
+        return value.strftime(fmt)
+    try:
+        from datetime import datetime as _dt
+        return _dt.fromisoformat(str(value)).strftime(fmt)
+    except Exception:
+        return str(value)
+
+
 @app.template_filter('brl')
 def fmt_brl(value):
     try:
@@ -295,6 +308,17 @@ def dashboard():
     )
     estoque_itens = q("SELECT * FROM estoque ORDER BY categoria, produto")
     estoque_cats  = q("SELECT DISTINCT categoria FROM estoque ORDER BY categoria")
+    # Consultas por dia nos últimos 7 dias (para o gráfico)
+    semana_rows = q(
+        "SELECT data_hora::date AS dia, COUNT(*) AS total "
+        "FROM consultas "
+        "WHERE data_hora::date >= CURRENT_DATE - INTERVAL '6 days' "
+        "GROUP BY dia ORDER BY dia"
+    )
+    from datetime import timedelta
+    semana_labels = [(date.today() - timedelta(days=i)).strftime('%d/%m') for i in range(6, -1, -1)]
+    semana_map    = {str(r['dia']): int(r['total']) for r in semana_rows}
+    semana_data   = [semana_map.get((date.today() - timedelta(days=i)).strftime('%Y-%m-%d'), 0) for i in range(6, -1, -1)]
     return render_template('dashboard.html',
                            total_pacientes=total_pacientes,
                            total_hoje=total_hoje,
@@ -303,7 +327,9 @@ def dashboard():
                            estoque_itens=estoque_itens,
                            estoque_cats=estoque_cats,
                            faturamento_mes=faturamento_mes,
-                           proximas=proximas)
+                           proximas=proximas,
+                           semana_labels=semana_labels,
+                           semana_data=semana_data)
 
 
 # ---------------------------------------------------------------------------
@@ -914,6 +940,81 @@ def dentistas_toggle(did):
     exe("UPDATE dentistas SET ativo=%s WHERE id=%s", (novo, did))
     flash(f'{dentista["nome"]} {"ativado" if novo else "desativado"}.', 'success')
     return redirect(url_for('dentistas_lista'))
+
+
+# ---------------------------------------------------------------------------
+# Orçamentos
+# ---------------------------------------------------------------------------
+
+@app.route('/orcamentos')
+@login_required
+def orcamentos_lista():
+    filtro = request.args.get('status', '')
+    sql = ("SELECT o.*, p.nome AS paciente, d.nome AS dentista "
+           "FROM orcamentos o "
+           "JOIN pacientes p ON p.id=o.paciente_id "
+           "JOIN dentistas d ON d.id=o.dentista_id")
+    params = []
+    if filtro:
+        sql += " WHERE o.status=%s"; params.append(filtro)
+    sql += " ORDER BY o.criado_em DESC"
+    rows = q(sql, params)
+    return render_template('orcamentos/lista.html', orcamentos=rows, filtro_status=filtro)
+
+
+@app.route('/orcamentos/novo', methods=['GET', 'POST'])
+@login_required
+def orcamentos_novo():
+    pacientes_list = q("SELECT id, nome FROM pacientes ORDER BY nome")
+    dentistas_list = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=TRUE ORDER BY nome")
+    if request.method == 'POST':
+        f = request.form
+        procs  = f.getlist('proc[]')
+        qtds   = f.getlist('qtd[]')
+        vunits = f.getlist('vunit[]')
+        total  = sum(int(q or 1) * float(v or 0) for q, v in zip(qtds, vunits))
+        oid = exe(
+            "INSERT INTO orcamentos (paciente_id,dentista_id,descricao,valor_total,validade,observacoes) "
+            "VALUES (%s,%s,%s,%s,%s,%s)",
+            (f['paciente_id'], f['dentista_id'], f.get('descricao'),
+             total, f.get('validade') or None, f.get('observacoes')))
+        for proc, qtd, vunit in zip(procs, qtds, vunits):
+            if proc.strip():
+                vt = int(qtd or 1) * float(vunit or 0)
+                exe("INSERT INTO orcamento_itens (orcamento_id,procedimento,quantidade,valor_unit,valor_total) "
+                    "VALUES (%s,%s,%s,%s,%s)",
+                    (oid, proc.strip(), int(qtd or 1), float(vunit or 0), vt))
+        flash('Orçamento criado com sucesso!', 'success')
+        return redirect(url_for('orcamentos_detalhe', oid=oid))
+    return render_template('orcamentos/form.html',
+                           pacientes=pacientes_list, dentistas=dentistas_list,
+                           pre_paciente=request.args.get('paciente_id', ''))
+
+
+@app.route('/orcamentos/<int:oid>')
+@login_required
+def orcamentos_detalhe(oid):
+    orc = q1("SELECT o.*, p.nome AS paciente, p.telefone, p.email, "
+             "p.id AS paciente_id, d.nome AS dentista "
+             "FROM orcamentos o "
+             "JOIN pacientes p ON p.id=o.paciente_id "
+             "JOIN dentistas d ON d.id=o.dentista_id "
+             "WHERE o.id=%s", (oid,))
+    if not orc:
+        flash('Orçamento não encontrado.', 'danger')
+        return redirect(url_for('orcamentos_lista'))
+    itens = q("SELECT * FROM orcamento_itens WHERE orcamento_id=%s ORDER BY id", (oid,))
+    return render_template('orcamentos/detalhe.html', orc=orc, itens=itens)
+
+
+@app.route('/orcamentos/<int:oid>/status', methods=['POST'])
+@login_required
+def orcamentos_status(oid):
+    novo = request.form.get('status', '')
+    if novo in ('aprovado', 'rejeitado', 'expirado', 'pendente'):
+        exe("UPDATE orcamentos SET status=%s WHERE id=%s", (novo, oid))
+        flash(f'Orçamento {novo}.', 'success')
+    return redirect(url_for('orcamentos_detalhe', oid=oid))
 
 
 # ---------------------------------------------------------------------------

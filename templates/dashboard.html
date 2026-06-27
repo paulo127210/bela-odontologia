@@ -71,9 +71,22 @@
         <a href="{{ url_for('estoque_lista') }}" class="btn btn-outline-warning btn-sm">
           <i class="bi bi-box-seam me-1"></i> Estoque
         </a>
+        <a href="{{ url_for('orcamentos_novo') }}" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-file-earmark-text me-1"></i> Orçamento
+        </a>
         <a href="{{ url_for('relatorios') }}" class="btn btn-outline-info btn-sm">
           <i class="bi bi-bar-chart me-1"></i> Relatórios
         </a>
+      </div>
+    </div>
+
+    <!-- Gráfico: consultas dos últimos 7 dias -->
+    <div class="card table-card mb-4">
+      <div class="card-header">
+        <i class="bi bi-graph-up me-1 text-primary"></i> Consultas — Últimos 7 dias
+      </div>
+      <div class="card-body" style="height:180px;position:relative">
+        <canvas id="chartSemana"></canvas>
       </div>
     </div>
 
@@ -346,7 +359,9 @@
         <div class="modal-body">
           <p class="text-muted small mb-2" id="dashMvNome"></p>
           <label class="form-label fw-semibold">Quantidade *</label>
-          <input type="number" name="quantidade" id="dashMvQtd" class="form-control form-control-lg" min="1" value="1" required>
+          <input type="number" name="quantidade" id="dashMvQtd" class="form-control form-control-lg mb-3" min="1" value="1" required>
+          <label class="form-label small">Observação (opcional)</label>
+          <input type="text" name="observacao" class="form-control form-control-sm" placeholder="Ex: compra mensal, uso em paciente…">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -360,6 +375,36 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  var ctx = document.getElementById('chartSemana');
+  if(!ctx) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ semana_labels | tojson }},
+      datasets: [{
+        label: 'Consultas',
+        data: {{ semana_data | tojson }},
+        backgroundColor: 'rgba(99,102,241,0.6)',
+        borderColor: 'rgba(99,102,241,1)',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+})();
+</script>
 <script>
 function dashEditar(item) {
   document.getElementById('dashFormEditar').action = '/estoque/' + item.id + '/editar';

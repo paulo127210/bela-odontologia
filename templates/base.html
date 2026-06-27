@@ -47,6 +47,9 @@
     <a href="{{ url_for('faturamento_lista') }}" class="nav-link {{ 'active' if request.endpoint == 'faturamento_lista' else '' }}">
       <i class="bi bi-cash-stack"></i><span class="sidebar-label"> Faturamento</span>
     </a>
+    <a href="{{ url_for('orcamentos_lista') }}" class="nav-link {{ 'active' if request.endpoint and 'orcamento' in request.endpoint else '' }}">
+      <i class="bi bi-file-earmark-text"></i><span class="sidebar-label"> Orçamentos</span>
+    </a>
 
     <div class="nav-section sidebar-label">Gestão</div>
     <a href="{{ url_for('estoque_lista') }}" class="nav-link {{ 'active' if request.endpoint == 'estoque_lista' else '' }}">

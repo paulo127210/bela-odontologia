@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Orçamento #{{ orc.id }} — Bela Odontologia{% endblock %}
+{% block page_title %}Orçamento #{{ orc.id }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <!-- Cabeçalho do orçamento -->
+    <div class="card border-0 shadow mb-4" style="background:linear-gradient(135deg,#1e3a5f,#6a1f9e)">
+      <div class="card-body text-white py-4 px-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <div class="small opacity-75 mb-1">ORÇAMENTO #{{ '%04d' % orc.id }}</div>
+            <h4 class="fw-bold mb-1">{{ orc.paciente }}</h4>
+            <div class="opacity-75 small">
+              <i class="bi bi-person-badge me-1"></i>{{ orc.dentista }} ·
+              Emitido em {{ orc.criado_em | dt('%d/%m/%Y') }}
+            </div>
+          </div>
+          <div class="text-end">
+            <div class="small opacity-75">Total</div>
+            <div class="display-6 fw-bold">{{ orc.valor_total | brl }}</div>
+            {% if orc.validade %}
+            <div class="small {{ 'text-danger' if orc.validade < hoje else 'opacity-75' }}">
+              Válido até {{ orc.validade }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Badge status -->
+        <div class="mt-3">
+          {% if orc.status == 'aprovado' %}<span class="badge bg-success fs-6">✓ Aprovado</span>
+          {% elif orc.status == 'rejeitado' %}<span class="badge bg-danger fs-6">✕ Rejeitado</span>
+          {% elif orc.status == 'expirado' %}<span class="badge bg-dark fs-6">Expirado</span>
+          {% else %}<span class="badge bg-warning text-dark fs-6">Aguardando Aprovação</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Itens -->
+    <div class="card table-card mb-4">
+      <div class="card-header"><i class="bi bi-list-ol me-1"></i> Procedimentos</div>
+      <div class="card-body p-0">
+        <table class="table mb-0 small">
+          <thead class="table-light">
+            <tr><th>Procedimento</th><th class="text-center">Qtd</th><th class="text-end">Valor Unit.</th><th class="text-end">Subtotal</th></tr>
+          </thead>
+          <tbody>
+            {% for item in itens %}
+            <tr>
+              <td>{{ item.procedimento }}</td>
+              <td class="text-center">{{ item.quantidade }}</td>
+              <td class="text-end">{{ item.valor_unit | brl }}</td>
+              <td class="text-end fw-semibold">{{ item.valor_total | brl }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td colspan="3" class="text-end">TOTAL:</td>
+              <td class="text-end text-success">{{ orc.valor_total | brl }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    {% if orc.observacoes %}
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-sticky me-1"></i> Observações</div>
+      <div class="card-body small">{{ orc.observacoes }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Ações -->
+  <div class="col-lg-4">
+    <div class="card table-card mb-3">
+      <div class="card-header"><i class="bi bi-gear me-1"></i> Ações</div>
+      <div class="card-body d-flex flex-column gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-printer me-1"></i> Imprimir / PDF
+        </button>
+        {% if orc.status == 'pendente' %}
+        <form method="POST" action="{{ url_for('orcamentos_status', oid=orc.id) }}">
+          <input type="hidden" name="status" value="aprovado">
+          <button type="submit" class="btn btn-success btn-sm w-100">
+            <i class="bi bi-check-circle me-1"></i> Aprovar Orçamento
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('orcamentos_status', oid=orc.id) }}">
+          <input type="hidden" name="status" value="rejeitado">
+          <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+            <i class="bi bi-x-circle me-1"></i> Rejeitar
+          </button>
+        </form>
+        {% endif %}
+        {% if orc.status == 'aprovado' %}
+        <a href="{{ url_for('consultas_nova') }}?paciente_id={{ orc.paciente_id }}"
+           class="btn btn-primary btn-sm">
+          <i class="bi bi-calendar-plus me-1"></i> Agendar Consulta
+        </a>
+        {% endif %}
+        <a href="{{ url_for('orcamentos_lista') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Voltar à lista
+        </a>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-person me-1"></i> Dados do Paciente</div>
+      <div class="card-body small">
+        <strong>{{ orc.paciente }}</strong><br>
+        {% if orc.telefone %}<i class="bi bi-telephone me-1 text-muted"></i>{{ orc.telefone }}<br>{% endif %}
+        {% if orc.email %}<i class="bi bi-envelope me-1 text-muted"></i>{{ orc.email }}{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -13,6 +13,12 @@
           <a href="{{ url_for('anamnese_form', pid=paciente.id) }}" class="btn btn-sm btn-outline-danger" title="Anamnese">
             <i class="bi bi-clipboard2-pulse"></i>
           </a>
+          <button onclick="window.print()" class="btn btn-sm btn-outline-info" title="Imprimir Prontuário">
+            <i class="bi bi-printer"></i>
+          </button>
+          <a href="{{ url_for('orcamentos_novo') }}?paciente_id={{ paciente.id }}" class="btn btn-sm btn-outline-success" title="Novo Orçamento">
+            <i class="bi bi-file-earmark-plus"></i>
+          </a>
           <a href="{{ url_for('pacientes_editar', pid=paciente.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
             <i class="bi bi-pencil"></i>
           </a>
