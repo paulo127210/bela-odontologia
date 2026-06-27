@@ -115,7 +115,7 @@
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span class="text-muted">Estoque normal</span>
-          <span class="text-success fw-bold">{{ itens | selectattr('quantidade', 'gt', itens[0].quantidade_minima if itens else 0) | list | length if itens else 0 }}</span>
+          <span class="text-success fw-bold">{{ (itens | length) - (alertas | length) }}</span>
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span class="text-muted">Estoque baixo/zerado</span>

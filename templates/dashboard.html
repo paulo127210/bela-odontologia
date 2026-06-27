@@ -86,9 +86,11 @@
             <span class="badge bg-danger ms-1">{{ estoque_alertas|length }} alerta(s)</span>
           {% endif %}
         </span>
+        {% if session.usuario_perfil == 'admin' %}
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoEstoque">
           <i class="bi bi-plus-circle me-1"></i> Novo Produto
         </button>
+        {% endif %}
       </div>
       <div class="card-body p-0">
         {% if estoque_itens %}
@@ -132,16 +134,19 @@
                             onclick="dashMover({{ item.id }},'{{ item.produto|e }}','saida')">
                       <i class="bi bi-dash-lg"></i>
                     </button>
+                    {% if session.usuario_perfil == 'admin' %}
                     <button class="btn btn-outline-secondary" title="Editar"
                             onclick='dashEditar({{ item|tojson }})'>
                       <i class="bi bi-pencil"></i>
                     </button>
                     <form method="POST" action="{{ url_for('estoque_excluir', eid=item.id) }}"
                           onsubmit="return confirm('Remover {{ item.produto|e }}?')" style="display:inline">
+                      <input type="hidden" name="next" value="dashboard">
                       <button type="submit" class="btn btn-outline-danger" title="Excluir">
                         <i class="bi bi-trash"></i>
                       </button>
                     </form>
+                    {% endif %}
                   </div>
                 </td>
               </tr>
@@ -234,6 +239,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('estoque_novo') }}">
+        <input type="hidden" name="next" value="dashboard">
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-12">
@@ -287,6 +293,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="dashFormEditar">
+        <input type="hidden" name="next" value="dashboard">
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-12">
@@ -334,6 +341,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="dashFormMover">
+        <input type="hidden" name="next" value="dashboard">
         <input type="hidden" name="tipo" id="dashMvTipo">
         <div class="modal-body">
           <p class="text-muted small mb-2" id="dashMvNome"></p>

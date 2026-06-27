@@ -1,7 +1,7 @@
 import os
 import random
 import string
-from datetime import datetime
+from datetime import date, datetime
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -311,7 +311,7 @@ def pacientes_lista():
     busca = request.args.get('q', '').strip()
     if busca:
         like = f'%{busca}%'
-        rows = q("SELECT * FROM pacientes WHERE nome LIKE %s OR cpf LIKE %s OR telefone LIKE %s ORDER BY nome",
+        rows = q("SELECT * FROM pacientes WHERE nome ILIKE %s OR cpf ILIKE %s OR telefone ILIKE %s ORDER BY nome",
                  (like, like, like))
     else:
         rows = q("SELECT * FROM pacientes ORDER BY nome")
@@ -679,7 +679,7 @@ def faturamento_nota_fiscal(pgid):
     if not pg.get('numero_nf'):
         max_row = q1("SELECT COALESCE(MAX(numero_nf),0)+1 AS prox FROM pagamentos")
         now = datetime.now()
-        exe("UPDATE pagamentos SET numero_nf=%s, nf_emitida=1, nf_emitida_em=%s WHERE id=%s",
+        exe("UPDATE pagamentos SET numero_nf=%s, nf_emitida=TRUE, nf_emitida_em=%s WHERE id=%s",
             (max_row['prox'], now, pgid))
         pg['numero_nf']     = max_row['prox']
         pg['nf_emitida']    = 1
@@ -743,6 +743,14 @@ def estoque_lista():
     return render_template('estoque/lista.html', itens=itens, alertas=alertas, categorias=categorias)
 
 
+def _estoque_redirect():
+    """Volta para a página de origem (dashboard ou estoque) de forma segura."""
+    nxt = request.form.get('next', '')
+    if nxt == 'dashboard':
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('estoque_lista'))
+
+
 @app.route('/estoque/novo', methods=['POST'])
 @admin_required
 def estoque_novo():
@@ -753,7 +761,7 @@ def estoque_novo():
          int(request.form.get('quantidade_minima', 1)),
          request.form.get('unidade', 'unidade').strip()))
     flash(f'Produto "{request.form["produto"]}" cadastrado no estoque.', 'success')
-    return redirect(url_for('estoque_lista'))
+    return _estoque_redirect()
 
 
 @app.route('/estoque/<int:eid>/editar', methods=['POST'])
@@ -767,7 +775,7 @@ def estoque_editar(eid):
          request.form.get('unidade', 'unidade').strip(),
          eid))
     flash('Produto atualizado.', 'success')
-    return redirect(url_for('estoque_lista'))
+    return _estoque_redirect()
 
 
 @app.route('/estoque/<int:eid>/movimentar', methods=['POST'])
@@ -785,7 +793,7 @@ def estoque_movimentar(eid):
             flash(f'-{qtd} unidades retiradas.', 'success')
         else:
             flash('Quantidade insuficiente em estoque.', 'danger')
-    return redirect(url_for('estoque_lista'))
+    return _estoque_redirect()
 
 
 @app.route('/estoque/<int:eid>/excluir', methods=['POST'])
@@ -795,7 +803,7 @@ def estoque_excluir(eid):
     if item:
         exe("DELETE FROM estoque WHERE id=%s", (eid,))
         flash(f'Produto "{item["produto"]}" removido do estoque.', 'success')
-    return redirect(url_for('estoque_lista'))
+    return _estoque_redirect()
 
 
 # ---------------------------------------------------------------------------
