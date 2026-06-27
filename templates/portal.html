@@ -31,12 +31,18 @@ body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hid
 .nav-img-btn:hover { color: #d4a017; border-bottom-color: #d4a017; }
 .nav-img-btn.nav-active { color: #d4a017; border-bottom-color: #d4a017; }
 .nav-img-btn.nav-agendar {
-    background: rgba(184,134,11,.2);
-    border: 1px solid rgba(184,134,11,.5);
+    background: rgba(184,134,11,.25);
+    border-bottom: none;
+    outline: 1.5px solid rgba(212,160,23,.7);
     border-radius: 20px;
-    padding: 5px 14px;
+    padding: 5px 16px;
+    color: #f0c040;
 }
-.nav-img-btn.nav-agendar:hover { background: rgba(184,134,11,.4); }
+.nav-img-btn.nav-agendar:hover {
+    background: rgba(184,134,11,.45);
+    outline-color: #d4a017;
+    color: #fff;
+}
 .btn-admin-destaque {
     display: inline-flex;
     align-items: center;
@@ -333,28 +339,9 @@ footer a:hover { color: #fff; }
   <!-- Imagem em tamanho real, responsiva, renderização de alta qualidade -->
   <img src="{{ url_for('static', filename='img/hero.jpg') }}"
        alt="Bela Odontologia"
-       style="width:100%; display:block;
-              image-rendering: -webkit-optimize-contrast;
-              image-rendering: crisp-edges;
-              filter: contrast(1.08) saturate(1.12) brightness(1.02);">
+       style="width:100%; display:block;">
 
-  <!-- Cobertura pixel-perfect que apaga completamente o texto da imagem -->
-  <!-- Gradiente horizontal com as cores exatas amostradas da imagem -->
-  <div style="position:absolute;top:0;right:0;width:54%;height:16%;
-              background:linear-gradient(to right,
-                transparent                  0%,
-                rgba(115,49,87,0.95)         6%,
-                rgb(108,26,75)              14%,
-                rgb(109,25,75)              30%,
-                rgb(110,26,76)              50%,
-                rgb(123,36,87)              62%,
-                rgb(83,26,59)               72%,
-                rgb(66,16,45)               82%,
-                rgb(98,19,67)               91%,
-                rgb(20,21,26)              100%);
-              z-index:5;pointer-events:none;"></div>
-
-  <!-- Navegação HTML real, posicionada sobre os botões da imagem -->
+  <!-- Navegação HTML real, posicionada sobre a imagem -->
   <nav style="position:absolute;top:0;right:0;width:40%;height:15%;
               display:flex;align-items:center;justify-content:flex-end;
               gap:clamp(8px,2vw,28px);padding-right:2%;z-index:10;">
