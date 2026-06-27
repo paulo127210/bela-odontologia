@@ -73,7 +73,24 @@ CREATE TABLE IF NOT EXISTS pagamentos (
     forma_pagamento VARCHAR(50),
     convenio        VARCHAR(80),
     status          VARCHAR(20)   NOT NULL DEFAULT 'pago',
+    parcelas        SMALLINT      NOT NULL DEFAULT 1,
+    bandeira        VARCHAR(30),
+    chave_pix       VARCHAR(100),
+    numero_nf       INTEGER,
+    nf_emitida      SMALLINT      NOT NULL DEFAULT 0,
+    nf_emitida_em   TIMESTAMPTZ,
     criado_em       TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+-- Estoque
+CREATE TABLE IF NOT EXISTS estoque (
+    id                SERIAL       PRIMARY KEY,
+    produto           VARCHAR(120) NOT NULL,
+    categoria         VARCHAR(60)  NOT NULL DEFAULT 'Geral',
+    quantidade        INTEGER      NOT NULL DEFAULT 0,
+    quantidade_minima INTEGER      NOT NULL DEFAULT 1,
+    unidade           VARCHAR(20)  NOT NULL DEFAULT 'unidade',
+    criado_em         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 -- Índices para performance

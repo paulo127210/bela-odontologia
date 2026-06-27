@@ -66,9 +66,9 @@ def cliente_required(f):
 
 
 def db():
-    if 'mysql_conn' not in g:
-        g.mysql_conn = get_db()
-    return g.mysql_conn
+    if 'db_conn' not in g:
+        g.db_conn = get_db()
+    return g.db_conn
 
 
 def q(sql, params=()):
@@ -84,17 +84,19 @@ def q1(sql, params=()):
 
 
 def exe(sql, params=()):
+    """Executa um statement; retorna o id gerado para INSERTs via RETURNING id."""
+    is_insert = sql.strip().upper().startswith('INSERT')
+    query = (sql + ' RETURNING id') if is_insert else sql
     with db().cursor() as cur:
-        cur.execute(sql, params)
+        cur.execute(query, params)
+        row = cur.fetchone() if is_insert else None
     db().commit()
-    with db().cursor() as cur:
-        cur.execute("SELECT LAST_INSERT_ID() AS lid")
-        return cur.fetchone()['lid']
+    return row['id'] if row else None
 
 
 @app.teardown_appcontext
 def close_db(_e=None):
-    conn = g.pop('mysql_conn', None)
+    conn = g.pop('db_conn', None)
     if conn:
         conn.close()
 
@@ -249,9 +251,9 @@ def logout():
 @login_required
 def dashboard():
     total_pacientes = q1("SELECT COUNT(*) AS n FROM pacientes")['n']
-    total_hoje      = q1("SELECT COUNT(*) AS n FROM consultas WHERE DATE(data_hora)=CURDATE()")['n']
-    total_mes       = q1("SELECT COUNT(*) AS n FROM consultas WHERE YEAR(data_hora)=YEAR(NOW()) AND MONTH(data_hora)=MONTH(NOW())")['n']
-    fat_mes_row     = q1("SELECT COALESCE(SUM(valor),0) AS s FROM pagamentos WHERE YEAR(data_pagamento)=YEAR(NOW()) AND MONTH(data_pagamento)=MONTH(NOW())")
+    total_hoje      = q1("SELECT COUNT(*) AS n FROM consultas WHERE data_hora::date = CURRENT_DATE")['n']
+    total_mes       = q1("SELECT COUNT(*) AS n FROM consultas WHERE date_trunc('month', data_hora) = date_trunc('month', NOW())")['n']
+    fat_mes_row     = q1("SELECT COALESCE(SUM(valor),0) AS s FROM pagamentos WHERE date_trunc('month', data_pagamento) = date_trunc('month', CURRENT_DATE)")
     faturamento_mes = float(fat_mes_row['s']) if fat_mes_row else 0.0
     proximas = q(
         "SELECT c.id, p.nome AS paciente, d.nome AS dentista, "
@@ -501,7 +503,7 @@ def faturamento_lista():
            "JOIN pacientes p ON p.id=c.paciente_id WHERE 1=1 ")
     params = []
     if mes:
-        sql += " AND DATE_FORMAT(pg.data_pagamento,'%%Y-%%m')=%s"; params.append(mes)
+        sql += " AND TO_CHAR(pg.data_pagamento,'YYYY-MM')=%s"; params.append(mes)
     if status:
         sql += " AND pg.status=%s"; params.append(status)
     if forma:
@@ -595,12 +597,12 @@ def _get_pagamento_completo(pgid):
 @login_required
 def relatorios():
     por_status = q("SELECT status, COUNT(*) AS total FROM consultas "
-                   "WHERE YEAR(data_hora)=YEAR(NOW()) AND MONTH(data_hora)=MONTH(NOW()) "
+                   "WHERE date_trunc('month', data_hora) = date_trunc('month', NOW()) "
                    "GROUP BY status")
-    fat_mensal = q("SELECT DATE_FORMAT(data_pagamento,'%%Y-%%m') AS mes, "
+    fat_mensal = q("SELECT TO_CHAR(data_pagamento,'YYYY-MM') AS mes, "
                    "SUM(valor) AS total, COUNT(*) AS qtd "
                    "FROM pagamentos "
-                   "WHERE data_pagamento >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) "
+                   "WHERE data_pagamento >= CURRENT_DATE - INTERVAL '6 months' "
                    "GROUP BY mes ORDER BY mes")
     top_proc = q("SELECT tipo_procedimento, COUNT(*) AS total "
                  "FROM consultas WHERE tipo_procedimento IS NOT NULL AND tipo_procedimento != '' "
@@ -608,9 +610,9 @@ def relatorios():
     top_dentistas = q("SELECT d.nome, COUNT(*) AS total "
                       "FROM consultas c JOIN dentistas d ON d.id=c.dentista_id "
                       "GROUP BY d.nome ORDER BY total DESC LIMIT 5")
-    novos_pac = q("SELECT DATE_FORMAT(criado_em,'%%Y-%%m') AS mes, COUNT(*) AS total "
+    novos_pac = q("SELECT TO_CHAR(criado_em,'YYYY-MM') AS mes, COUNT(*) AS total "
                   "FROM pacientes "
-                  "WHERE criado_em >= DATE_SUB(NOW(), INTERVAL 6 MONTH) "
+                  "WHERE criado_em >= NOW() - INTERVAL '6 months' "
                   "GROUP BY mes ORDER BY mes")
     return render_template('relatorios/index.html',
                            por_status=por_status, fat_mensal=fat_mensal,
