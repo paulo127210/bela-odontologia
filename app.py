@@ -696,9 +696,9 @@ def estoque_excluir(eid):
 def dentistas_lista():
     rows = q(
         "SELECT d.*, "
-        "  COUNT(c.id)              AS total_consultas, "
-        "  SUM(c.status='concluida') AS consultas_concluidas, "
-        "  SUM(c.status='agendada')  AS consultas_agendadas "
+        "  COUNT(c.id) AS total_consultas, "
+        "  COUNT(c.id) FILTER (WHERE c.status='concluida') AS consultas_concluidas, "
+        "  COUNT(c.id) FILTER (WHERE c.status='agendada')  AS consultas_agendadas "
         "FROM dentistas d "
         "LEFT JOIN consultas c ON c.dentista_id=d.id "
         "GROUP BY d.id ORDER BY d.ativo DESC, d.nome"
