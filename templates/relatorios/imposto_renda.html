@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% block title %}IR {{ ano }} — Bela Odontologia{% endblock %}
+{% block page_title %}Relatório Imposto de Renda {{ ano }}{% endblock %}
+
+{% block content %}
+
+<!-- Cabeçalho oficial -->
+<div class="card border-0 shadow mb-4" style="background:linear-gradient(135deg,#1e3a5f,#2d6a4f)">
+  <div class="card-body text-white py-4 px-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="small opacity-75 mb-1">RELATÓRIO ANUAL PARA DECLARAÇÃO DE</div>
+        <h3 class="fw-bold mb-1">Imposto de Renda — Ano-Calendário {{ ano }}</h3>
+        <div class="opacity-75 small">Clínica Bela Odontologia · Gerado em {{ hoje.strftime('%d/%m/%Y às %H:%M') }}</div>
+      </div>
+      <div class="text-end">
+        <div class="small opacity-75">Receita Bruta Total</div>
+        <div class="display-6 fw-bold">{{ receita.total | brl }}</div>
+        <div class="small opacity-75">{{ receita.qtd }} procedimento(s)</div>
+      </div>
+    </div>
+    <!-- Seletor de ano -->
+    <div class="mt-3 d-flex gap-2 flex-wrap">
+      {% for a in anos_disponiveis %}
+      <a href="{{ url_for('relatorio_ir', ano=a.ano) }}"
+         class="btn btn-sm {{ 'btn-light text-dark fw-bold' if a.ano==ano else 'btn-outline-light' }}">
+        {{ a.ano }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- ═══ RECEITA POR MÊS ═══ -->
+  <div class="col-lg-8">
+    <div class="card table-card h-100">
+      <div class="card-header"><i class="bi bi-calendar3 me-1"></i> Receita Mensal</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0 small">
+          <thead class="table-light">
+            <tr><th>Mês</th><th class="text-center">Procedimentos</th><th class="text-end">Valor</th><th>% do Ano</th></tr>
+          </thead>
+          <tbody>
+            {% set total_ano = receita.total | float %}
+            {% for m in por_mes %}
+            {% set pct = (m.total|float / total_ano * 100) if total_ano else 0 %}
+            <tr>
+              <td class="fw-semibold">{{ m.nome_mes.strip() }}</td>
+              <td class="text-center">{{ m.qtd }}</td>
+              <td class="text-end fw-bold text-success">{{ m.total | brl }}</td>
+              <td style="width:140px">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height:6px">
+                    <div class="progress-bar bg-success" style="width:{{ pct|int }}%"></div>
+                  </div>
+                  <span class="small text-muted" style="width:38px">{{ "%.1f"|format(pct) }}%</span>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Sem receitas em {{ ano }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td>TOTAL ANUAL</td>
+              <td class="text-center">{{ receita.qtd }}</td>
+              <td class="text-end text-success">{{ receita.total | brl }}</td>
+              <td>100%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FORMAS DE PAGAMENTO ═══ -->
+  <div class="col-lg-4">
+    <div class="card table-card mb-4">
+      <div class="card-header"><i class="bi bi-credit-card me-1"></i> Por Forma de Recebimento</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 small">
+          <thead class="table-light"><tr><th>Forma</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for f in por_forma %}
+            <tr>
+              <td>{{ f.forma_pagamento or 'Outros' }}</td>
+              <td class="text-end fw-semibold">{{ f.total | brl }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-center text-muted">—</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Convênios -->
+    {% if convenios %}
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-shield-check me-1 text-danger"></i> Receita por Convênio</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 small">
+          <thead class="table-light"><tr><th>Convênio</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for c in convenios %}
+            <tr>
+              <td>{{ c.convenio }}</td>
+              <td class="text-end">{{ c.total | brl }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ═══ POR PROCEDIMENTO ═══ -->
+  <div class="col-lg-6">
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-tooth me-1"></i> Por Procedimento (DIRF)</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 small">
+          <thead class="table-light"><tr><th>Procedimento</th><th class="text-center">Qtd</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for p in por_proc %}
+            <tr>
+              <td>{{ p.tipo_procedimento }}</td>
+              <td class="text-center">{{ p.qtd }}</td>
+              <td class="text-end fw-semibold">{{ p.total | brl }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted">—</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ POR DENTISTA ═══ -->
+  <div class="col-lg-6">
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-person-badge me-1"></i> Por Profissional (DIRF)</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 small">
+          <thead class="table-light"><tr><th>Profissional</th><th>CRO</th><th class="text-center">Qtd</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+            {% for d in por_dentista %}
+            <tr>
+              <td class="fw-semibold">{{ d.nome }}</td>
+              <td class="text-muted">{{ d.cro }}</td>
+              <td class="text-center">{{ d.qtd }}</td>
+              <td class="text-end fw-semibold">{{ d.total | brl }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted">—</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ORIENTAÇÕES IR ═══ -->
+  <div class="col-12">
+    <div class="card border-warning">
+      <div class="card-header bg-warning text-dark fw-bold">
+        <i class="bi bi-exclamation-triangle me-1"></i> Orientações para Declaração do IRPF/IRPJ — {{ ano }}
+      </div>
+      <div class="card-body small">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <strong>Pessoa Física (IRPF)</strong>
+            <ul class="mt-2 ps-3">
+              <li>Declare a <strong>receita bruta</strong> de <strong>{{ receita.total | brl }}</strong> em "Rendimentos Tributáveis Recebidos de PJ"</li>
+              <li>Livro-caixa: abata despesas comprovadas (salários, aluguel, material)</li>
+              <li>Guarde notas fiscais e recibos por 5 anos</li>
+              <li>Receitas de convênios: informe CNPJ do convênio na ficha DIRF</li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <strong>Pessoa Jurídica (Simples/Lucro Presumido)</strong>
+            <ul class="mt-2 ps-3">
+              <li>Receita bruta anual: <strong>{{ receita.total | brl }}</strong></li>
+              <li>Simples Nacional: recolhimento mensal pelo DAS</li>
+              <li>Lucro Presumido: 32% de presunção sobre receita bruta</li>
+              <li>Apresente DEFIS até 31/03 do ano seguinte</li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <strong>Documentos necessários</strong>
+            <ul class="mt-2 ps-3">
+              <li>Este relatório (imprima ou salve PDF)</li>
+              <li>Notas fiscais emitidas</li>
+              <li>Recibos de convênio</li>
+              <li>Comprovantes de despesas dedutíveis</li>
+              <li>Livro-caixa ou contabilidade</li>
+            </ul>
+          </div>
+        </div>
+        <div class="alert alert-warning mt-3 mb-0 small">
+          <i class="bi bi-info-circle me-1"></i>
+          <strong>Atenção:</strong> Este relatório é informativo. Consulte sempre seu contador ou a Receita Federal
+          para a declaração correta. Prazo usual de entrega: <strong>último dia útil de abril</strong> do ano seguinte.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Botão de impressão/PDF
+document.addEventListener('DOMContentLoaded', function(){
+  var btn = document.createElement('button');
+  btn.className = 'btn btn-sm btn-outline-secondary ms-2';
+  btn.innerHTML = '<i class="bi bi-printer me-1"></i>Imprimir / Salvar PDF';
+  btn.onclick = function(){ window.print(); };
+  document.querySelector('.topbar .d-flex').appendChild(btn);
+});
+</script>
+{% endblock %}

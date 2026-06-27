@@ -514,25 +514,112 @@ def prontuarios_form(cid):
 @app.route('/faturamento')
 @login_required
 def faturamento_lista():
-    mes    = request.args.get('mes', '')
-    status = request.args.get('status', '')
-    forma  = request.args.get('forma', '')
-    sql = ("SELECT pg.*, c.tipo_procedimento, p.nome AS paciente "
-           "FROM pagamentos pg "
-           "JOIN consultas c ON c.id=pg.consulta_id "
-           "JOIN pacientes p ON p.id=c.paciente_id WHERE 1=1 ")
+    from datetime import date, timedelta
+    periodo = request.args.get('periodo', 'mes')
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    status   = request.args.get('status', '')
+    forma    = request.args.get('forma', '')
+    hoje     = date.today()
+
+    # Calcula intervalo conforme período
+    if periodo == 'hoje':
+        data_ini = data_fim = hoje.isoformat()
+    elif periodo == 'semana':
+        data_ini = (hoje - timedelta(days=hoje.weekday())).isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'mes':
+        data_ini = hoje.replace(day=1).isoformat()
+        data_fim = hoje.isoformat()
+    elif periodo == 'ano':
+        data_ini = hoje.replace(month=1, day=1).isoformat()
+        data_fim = hoje.isoformat()
+    # 'custom' usa data_ini/data_fim do GET
+
+    base = ("SELECT pg.*, c.tipo_procedimento, p.nome AS paciente "
+            "FROM pagamentos pg "
+            "JOIN consultas c ON c.id=pg.consulta_id "
+            "JOIN pacientes p ON p.id=c.paciente_id WHERE 1=1 ")
     params = []
-    if mes:
-        sql += " AND TO_CHAR(pg.data_pagamento,'YYYY-MM')=%s"; params.append(mes)
+    if data_ini:
+        base += " AND pg.data_pagamento >= %s"; params.append(data_ini)
+    if data_fim:
+        base += " AND pg.data_pagamento <= %s"; params.append(data_fim)
     if status:
-        sql += " AND pg.status=%s"; params.append(status)
+        base += " AND pg.status=%s"; params.append(status)
     if forma:
-        sql += " AND pg.forma_pagamento=%s"; params.append(forma)
-    sql += " ORDER BY pg.data_pagamento DESC"
-    rows = q(sql, params)
+        base += " AND pg.forma_pagamento=%s"; params.append(forma)
+    base += " ORDER BY pg.data_pagamento DESC"
+    rows  = q(base, params)
     total = sum(float(r['valor']) for r in rows)
+
+    # Totais por forma de pagamento
+    por_forma = {}
+    for r in rows:
+        f = r['forma_pagamento'] or 'Outros'
+        por_forma[f] = por_forma.get(f, 0) + float(r['valor'])
+
+    # Alerta de IR (31/dez)
+    ir_alerta = (hoje.month == 12 and hoje.day == 31)
+    ir_ano    = hoje.year
+
     return render_template('faturamento/lista.html',
-                           pagamentos=rows, total=total, mes=mes, status=status, forma=forma)
+                           pagamentos=rows, total=total, por_forma=por_forma,
+                           periodo=periodo, data_ini=data_ini, data_fim=data_fim,
+                           status=status, forma=forma,
+                           ir_alerta=ir_alerta, ir_ano=ir_ano)
+
+
+@app.route('/relatorios/imposto-de-renda/<int:ano>')
+@login_required
+def relatorio_ir(ano):
+    # Receita bruta anual
+    receita = q1(
+        "SELECT COALESCE(SUM(valor),0) AS total, COUNT(*) AS qtd "
+        "FROM pagamentos WHERE EXTRACT(YEAR FROM data_pagamento)=%s AND status='pago'", (ano,))
+    # Por forma de pagamento
+    por_forma = q(
+        "SELECT forma_pagamento, SUM(valor) AS total, COUNT(*) AS qtd "
+        "FROM pagamentos WHERE EXTRACT(YEAR FROM data_pagamento)=%s AND status='pago' "
+        "GROUP BY forma_pagamento ORDER BY total DESC", (ano,))
+    # Por mês
+    por_mes = q(
+        "SELECT TO_CHAR(data_pagamento,'MM') AS mes, TO_CHAR(data_pagamento,'Month') AS nome_mes, "
+        "SUM(valor) AS total, COUNT(*) AS qtd "
+        "FROM pagamentos WHERE EXTRACT(YEAR FROM data_pagamento)=%s AND status='pago' "
+        "GROUP BY mes, nome_mes ORDER BY mes", (ano,))
+    # Por procedimento
+    por_proc = q(
+        "SELECT c.tipo_procedimento, SUM(pg.valor) AS total, COUNT(*) AS qtd "
+        "FROM pagamentos pg JOIN consultas c ON c.id=pg.consulta_id "
+        "WHERE EXTRACT(YEAR FROM pg.data_pagamento)=%s AND pg.status='pago' "
+        "AND c.tipo_procedimento IS NOT NULL "
+        "GROUP BY c.tipo_procedimento ORDER BY total DESC", (ano,))
+    # Por dentista
+    por_dentista = q(
+        "SELECT d.nome, d.cro, SUM(pg.valor) AS total, COUNT(*) AS qtd "
+        "FROM pagamentos pg "
+        "JOIN consultas c ON c.id=pg.consulta_id "
+        "JOIN dentistas d ON d.id=c.dentista_id "
+        "WHERE EXTRACT(YEAR FROM pg.data_pagamento)=%s AND pg.status='pago' "
+        "GROUP BY d.id, d.nome, d.cro ORDER BY total DESC", (ano,))
+    # Convênios separados (dedutíveis diferente)
+    convenios = q(
+        "SELECT convenio, SUM(valor) AS total, COUNT(*) AS qtd "
+        "FROM pagamentos WHERE EXTRACT(YEAR FROM data_pagamento)=%s "
+        "AND status='pago' AND convenio IS NOT NULL AND convenio != '' "
+        "GROUP BY convenio ORDER BY total DESC", (ano,))
+
+    anos_disponiveis = q(
+        "SELECT DISTINCT EXTRACT(YEAR FROM data_pagamento)::int AS ano "
+        "FROM pagamentos WHERE status='pago' ORDER BY ano DESC")
+
+    return render_template('relatorios/imposto_renda.html',
+                           ano=ano, receita=receita, por_forma=por_forma,
+                           por_mes=por_mes, por_proc=por_proc,
+                           por_dentista=por_dentista, convenios=convenios,
+                           anos_disponiveis=anos_disponiveis,
+                           hoje=date.today())
 
 
 @app.route('/faturamento/novo/<int:cid>', methods=['GET', 'POST'])

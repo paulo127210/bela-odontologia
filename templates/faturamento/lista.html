@@ -3,39 +3,88 @@
 {% block page_title %}Faturamento{% endblock %}
 
 {% block content %}
-<!-- Totalizador -->
+
+{% if ir_alerta %}
+<div class="alert alert-warning border-warning shadow mb-4 d-flex align-items-center gap-3">
+  <i class="bi bi-file-earmark-bar-graph fs-3 text-warning"></i>
+  <div>
+    <strong>Hoje é 31 de dezembro!</strong> O relatório de Imposto de Renda do ano {{ ir_ano }} está disponível.
+    <a href="{{ url_for('relatorio_ir', ano=ir_ano) }}" class="btn btn-warning btn-sm ms-2">
+      <i class="bi bi-download me-1"></i>Gerar Relatório IR {{ ir_ano }}
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Abas de período -->
 <div class="card table-card mb-4">
   <div class="card-body py-3 px-4">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-      <div>
-        <div class="text-muted small">Total filtrado</div>
-        <div class="fs-4 fw-bold text-success">{{ total | brl }}</div>
-      </div>
-      <form class="d-flex flex-wrap gap-2 align-items-center" method="GET">
-        <input type="month" name="mes" value="{{ mes }}" class="form-control form-control-sm" style="width:150px">
-        <select name="status" class="form-select form-select-sm" style="width:130px">
-          <option value="">Todos status</option>
-          <option value="pago"     {{ 'selected' if status=='pago' }}>Pago</option>
-          <option value="pendente" {{ 'selected' if status=='pendente' }}>Pendente</option>
-        </select>
-        <select name="forma" class="form-select form-select-sm" style="width:160px">
-          <option value="">Todas formas</option>
-          <option value="PIX"               {{ 'selected' if forma=='PIX' }}>PIX</option>
-          <option value="Cartão de Crédito" {{ 'selected' if forma=='Cartão de Crédito' }}>Cartão de Crédito</option>
-          <option value="Cartão de Débito"  {{ 'selected' if forma=='Cartão de Débito' }}>Cartão de Débito</option>
-          <option value="Transferência Bancária" {{ 'selected' if forma=='Transferência Bancária' }}>Transferência</option>
-          <option value="Dinheiro"          {{ 'selected' if forma=='Dinheiro' }}>Dinheiro</option>
-          <option value="Convênio"          {{ 'selected' if forma=='Convênio' }}>Convênio</option>
-        </select>
-        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-filter"></i> Filtrar</button>
-        {% if mes or status or forma %}
-          <a href="{{ url_for('faturamento_lista') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></a>
-        {% endif %}
-      </form>
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+      <strong class="me-1 text-muted small">PERÍODO:</strong>
+      {% for p, label in [('hoje','Hoje'),('semana','Esta Semana'),('mes','Este Mês'),('ano','Este Ano'),('custom','Personalizado')] %}
+      <a href="{{ url_for('faturamento_lista', periodo=p, status=status, forma=forma) }}"
+         class="btn btn-sm {{ 'btn-primary' if periodo==p else 'btn-outline-secondary' }}">
+        {{ label }}
+      </a>
+      {% endfor %}
+      <a href="{{ url_for('relatorio_ir', ano=ir_ano) }}" class="btn btn-sm btn-outline-warning ms-auto">
+        <i class="bi bi-file-earmark-bar-graph me-1"></i>IR {{ ir_ano }}
+      </a>
     </div>
+
+    <form class="d-flex flex-wrap gap-2 align-items-center" method="GET">
+      <input type="hidden" name="periodo" value="{{ 'custom' if periodo=='custom' else periodo }}">
+      {% if periodo == 'custom' %}
+      <div class="d-flex align-items-center gap-1">
+        <label class="small text-muted">De</label>
+        <input type="date" name="data_ini" value="{{ data_ini }}" class="form-control form-control-sm" style="width:145px">
+        <label class="small text-muted">até</label>
+        <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control form-control-sm" style="width:145px">
+      </div>
+      {% endif %}
+      <select name="status" class="form-select form-select-sm" style="width:130px">
+        <option value="">Todos status</option>
+        <option value="pago"     {{ 'selected' if status=='pago' }}>Pago</option>
+        <option value="pendente" {{ 'selected' if status=='pendente' }}>Pendente</option>
+      </select>
+      <select name="forma" class="form-select form-select-sm" style="width:160px">
+        <option value="">Todas formas</option>
+        <option value="PIX"               {{ 'selected' if forma=='PIX' }}>PIX</option>
+        <option value="Cartão de Crédito" {{ 'selected' if forma=='Cartão de Crédito' }}>Crédito</option>
+        <option value="Cartão de Débito"  {{ 'selected' if forma=='Cartão de Débito' }}>Débito</option>
+        <option value="Dinheiro"          {{ 'selected' if forma=='Dinheiro' }}>Dinheiro</option>
+        <option value="Convênio"          {{ 'selected' if forma=='Convênio' }}>Convênio</option>
+      </select>
+      <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-filter"></i> Filtrar</button>
+    </form>
   </div>
 </div>
 
+<!-- Totais -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Total do período</div>
+        <div class="fs-3 fw-bold text-success">{{ total | brl }}</div>
+        <div class="text-muted small">{{ pagamentos | length }} pagamento(s)</div>
+      </div>
+    </div>
+  </div>
+  {% for f, v in por_forma.items() %}
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">{{ f }}</div>
+        <div class="fs-5 fw-bold">{{ v | brl }}</div>
+        <div class="text-muted small">{{ "%.1f"|format(v/total*100 if total else 0) }}% do total</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Tabela -->
 <div class="card table-card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span><i class="bi bi-cash-stack me-1"></i> Pagamentos</span>
@@ -47,14 +96,8 @@
       <table class="table table-hover align-middle mb-0 small">
         <thead class="table-light">
           <tr>
-            <th>#</th>
-            <th>Paciente</th>
-            <th>Procedimento</th>
-            <th>Forma de Pagamento</th>
-            <th>Data</th>
-            <th>Valor</th>
-            <th>Status</th>
-            <th>NF-e</th>
+            <th>#</th><th>Paciente</th><th>Procedimento</th>
+            <th>Forma</th><th>Data</th><th>Valor</th><th>Status</th><th>NF-e</th>
             <th class="text-center">Ações</th>
           </tr>
         </thead>
@@ -66,50 +109,25 @@
             <td>{{ pg.tipo_procedimento or '—' }}</td>
             <td>
               {% set f = pg.forma_pagamento or '' %}
-              {% if f == 'PIX' %}
-                <span class="badge rounded-pill" style="background:#d4edda;color:#155724">⚡ PIX</span>
-              {% elif f == 'Cartão de Crédito' %}
-                <span class="badge rounded-pill bg-primary">💳 Crédito
-                  {% if pg.parcelas and pg.parcelas > 1 %}{{ pg.parcelas }}x{% endif %}
-                </span>
-              {% elif f == 'Cartão de Débito' %}
-                <span class="badge rounded-pill bg-info text-dark">💳 Débito</span>
-              {% elif 'Bancária' in f %}
-                <span class="badge rounded-pill bg-warning text-dark">🏦 Transferência</span>
-              {% elif f == 'Dinheiro' %}
-                <span class="badge rounded-pill bg-secondary">💵 Dinheiro</span>
-              {% elif f == 'Convênio' %}
-                <span class="badge rounded-pill bg-danger">🛡 Convênio</span>
-              {% else %}
-                {{ f or '—' }}
-              {% endif %}
+              {% if f == 'PIX' %}<span class="badge rounded-pill bg-success">⚡ PIX</span>
+              {% elif f == 'Cartão de Crédito' %}<span class="badge rounded-pill bg-primary">💳 Crédito{% if pg.parcelas and pg.parcelas > 1 %} {{ pg.parcelas }}x{% endif %}</span>
+              {% elif f == 'Cartão de Débito' %}<span class="badge rounded-pill bg-info text-dark">💳 Débito</span>
+              {% elif 'Bancária' in f %}<span class="badge rounded-pill bg-warning text-dark">🏦 TED/PIX</span>
+              {% elif f == 'Dinheiro' %}<span class="badge rounded-pill bg-secondary">💵 Dinheiro</span>
+              {% elif f == 'Convênio' %}<span class="badge rounded-pill bg-danger">🛡 Convênio</span>
+              {% else %}{{ f or '—' }}{% endif %}
             </td>
             <td>{{ pg.data_pagamento | dt('%d/%m/%Y') }}</td>
             <td class="fw-semibold text-success">{{ pg.valor | brl }}</td>
+            <td><span class="badge {{ 'bg-success' if pg.status=='pago' else 'bg-warning text-dark' }}">{{ pg.status | capitalize }}</span></td>
             <td>
-              <span class="badge {{ 'bg-success' if pg.status=='pago' else 'bg-warning text-dark' }}">
-                {{ pg.status | capitalize }}
-              </span>
-            </td>
-            <td>
-              {% if pg.nf_emitida %}
-                <span class="badge bg-success" title="NF-e Nº {{ '%06d' % pg.numero_nf }}">
-                  ✓ {{ '%06d' % pg.numero_nf }}
-                </span>
-              {% else %}
-                <span class="text-muted small">—</span>
-              {% endif %}
+              {% if pg.nf_emitida %}<span class="badge bg-success">✓ {{ '%06d' % pg.numero_nf }}</span>
+              {% else %}<span class="text-muted small">—</span>{% endif %}
             </td>
             <td class="text-center">
               <div class="btn-group btn-group-sm">
-                <a href="{{ url_for('faturamento_recibo', pgid=pg.id) }}"
-                   class="btn btn-outline-secondary" title="Recibo">
-                  <i class="bi bi-receipt"></i>
-                </a>
-                <a href="{{ url_for('faturamento_nota_fiscal', pgid=pg.id) }}"
-                   class="btn btn-outline-primary" title="Nota Fiscal">
-                  <i class="bi bi-file-earmark-text"></i> NF-e
-                </a>
+                <a href="{{ url_for('faturamento_recibo', pgid=pg.id) }}" class="btn btn-outline-secondary" title="Recibo"><i class="bi bi-receipt"></i></a>
+                <a href="{{ url_for('faturamento_nota_fiscal', pgid=pg.id) }}" class="btn btn-outline-primary" title="NF-e"><i class="bi bi-file-earmark-text"></i></a>
               </div>
             </td>
           </tr>
@@ -127,7 +145,7 @@
     {% else %}
     <div class="text-center text-muted py-5">
       <i class="bi bi-cash-coin fs-2 d-block mb-2"></i>
-      Nenhum pagamento encontrado.
+      Nenhum pagamento encontrado para o período selecionado.
     </div>
     {% endif %}
   </div>
