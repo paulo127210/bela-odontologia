@@ -1,13 +1,13 @@
-"""
-Bela Odontologia — Aplicação Flask com MySQL
-"""
 import os
+import random
+import string
 from datetime import datetime
-from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, g)
-from werkzeug.security import check_password_hash
 from functools import wraps
+
 from dotenv import load_dotenv
+from flask import Flask, g, flash, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
+
 from database import get_db, init_db
 
 load_dotenv()
@@ -18,7 +18,6 @@ app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 
 @app.template_filter('dt')
 def fmt_dt(value, fmt='%d/%m/%Y %H:%M'):
-    """Formata datetime/date/str para exibição."""
     if value is None:
         return '—'
     if hasattr(value, 'strftime'):
@@ -28,7 +27,6 @@ def fmt_dt(value, fmt='%d/%m/%Y %H:%M'):
 
 @app.template_filter('dt_input')
 def fmt_dt_input(value):
-    """Formata datetime para uso em <input type='datetime-local'>."""
     if value is None:
         return ''
     if hasattr(value, 'strftime'):
@@ -38,7 +36,6 @@ def fmt_dt_input(value):
 
 @app.template_filter('brl')
 def fmt_brl(value):
-    """Formata número como moeda BRL."""
     try:
         return f"R$ {float(value):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
     except (TypeError, ValueError):
@@ -46,7 +43,7 @@ def fmt_brl(value):
 
 
 # ---------------------------------------------------------------------------
-# Helpers de conexão
+# Helpers de BD
 # ---------------------------------------------------------------------------
 
 def login_required(f):
@@ -69,28 +66,24 @@ def cliente_required(f):
 
 
 def db():
-    """Retorna a conexão MySQL do request atual (abre uma vez por request)."""
     if 'mysql_conn' not in g:
         g.mysql_conn = get_db()
     return g.mysql_conn
 
 
 def q(sql, params=()):
-    """Executa SELECT e retorna lista de dicts."""
     with db().cursor() as cur:
         cur.execute(sql, params)
         return cur.fetchall()
 
 
 def q1(sql, params=()):
-    """Executa SELECT e retorna primeira linha (dict) ou None."""
     with db().cursor() as cur:
         cur.execute(sql, params)
         return cur.fetchone()
 
 
 def exe(sql, params=()):
-    """Executa INSERT/UPDATE/DELETE e retorna lastrowid."""
     with db().cursor() as cur:
         cur.execute(sql, params)
     db().commit()
@@ -107,10 +100,6 @@ def close_db(_e=None):
 
 
 # ---------------------------------------------------------------------------
-# Auth
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
 # Portal público (página inicial)
 # ---------------------------------------------------------------------------
 
@@ -125,7 +114,6 @@ def portal():
 
 @app.route('/cliente/acesso', methods=['POST'])
 def cliente_acesso():
-    """Formulário único: faz login se CPF existe, cadastra se não existe."""
     cpf_raw = request.form.get('cpf', '').strip()
     cpf     = cpf_raw.replace('.', '').replace('-', '')
     nasc    = request.form.get('data_nascimento', '').strip()
@@ -140,7 +128,6 @@ def cliente_acesso():
     pac = q1("SELECT * FROM pacientes WHERE REPLACE(REPLACE(cpf,'.',''),'-','')=%s", (cpf,))
 
     if pac:
-        # Paciente já cadastrado — verifica data de nascimento
         nasc_db = str(pac['data_nascimento']) if pac['data_nascimento'] else ''
         if nasc_db != nasc:
             flash('Data de nascimento incorreta. Tente novamente.', 'danger')
@@ -150,7 +137,6 @@ def cliente_acesso():
         session['cliente_cpf']  = pac['cpf']
         return redirect(url_for('cliente_agendar'))
     else:
-        # Novo paciente — precisa do nome
         if not nome:
             flash('Cadastro não encontrado. Preencha seu nome para se cadastrar.', 'warning')
             return redirect(url_for('portal') + '#agendar')
@@ -163,36 +149,25 @@ def cliente_acesso():
         return redirect(url_for('cliente_agendar'))
 
 
-@app.route('/cliente/entrar', methods=['POST'])
-def cliente_login():
-    return redirect(url_for('cliente_acesso'), 307)
-
-
-@app.route('/cliente/cadastrar', methods=['POST'])
-def cliente_cadastrar():
-    return redirect(url_for('cliente_acesso'), 307)
-
-
 @app.route('/cliente/agendar', methods=['GET', 'POST'])
 @cliente_required
 def cliente_agendar():
     dentistas = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=1 ORDER BY nome")
     if request.method == 'POST':
-        did   = request.form.get('dentista_id')
-        dh    = request.form.get('data_hora')
-        proc  = request.form.get('tipo_procedimento', '').strip()
-        obs   = request.form.get('observacoes', '').strip()
         exe("""INSERT INTO consultas (paciente_id, dentista_id, data_hora, tipo_procedimento, observacoes, status)
                VALUES (%s,%s,%s,%s,%s,'agendada')""",
-            (session['cliente_id'], did, dh, proc, obs))
+            (session['cliente_id'],
+             request.form.get('dentista_id'),
+             request.form.get('data_hora'),
+             request.form.get('tipo_procedimento', '').strip(),
+             request.form.get('observacoes', '').strip()))
         flash('Consulta agendada com sucesso! Aguarde a confirmação da clínica.', 'success')
         return redirect(url_for('cliente_agendar'))
     consultas = q("""SELECT c.data_hora, c.tipo_procedimento, c.status, d.nome AS dentista
                      FROM consultas c JOIN dentistas d ON d.id=c.dentista_id
                      WHERE c.paciente_id=%s ORDER BY c.data_hora DESC LIMIT 10""",
                   (session['cliente_id'],))
-    return render_template('cliente/agendamento.html',
-                           dentistas=dentistas, consultas=consultas)
+    return render_template('cliente/agendamento.html', dentistas=dentistas, consultas=consultas)
 
 
 @app.route('/cliente/sair')
@@ -224,21 +199,18 @@ def admin_login():
     return render_template('login.html', error=error)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login')
 def login():
     return redirect(url_for('admin_login'))
 
 
 @app.route('/admin/recuperar', methods=['GET', 'POST'])
 def admin_recuperar():
-    """Recuperação de senha do administrador — gera senha temporária e exibe na tela."""
     temp_senha = None
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
-        row   = q1("SELECT id, nome FROM usuarios WHERE email=%s AND ativo=1", (email,))
+        row   = q1("SELECT id FROM usuarios WHERE email=%s AND ativo=1", (email,))
         if row:
-            import random, string
-            from werkzeug.security import generate_password_hash
             temp = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
             exe("UPDATE usuarios SET senha=%s WHERE id=%s", (generate_password_hash(temp), row['id']))
             temp_senha = temp
@@ -249,13 +221,12 @@ def admin_recuperar():
 
 @app.route('/cliente/recuperar', methods=['GET', 'POST'])
 def cliente_recuperar():
-    """Recuperação de acesso do cliente — mostra CPF (mascarado) pelo e-mail ou telefone."""
     pac = None
     if request.method == 'POST':
         contato = request.form.get('contato', '').strip()
-        pac = q1("""SELECT nome, cpf, data_nascimento
-                    FROM pacientes
-                    WHERE email=%s OR REPLACE(REPLACE(telefone,' ',''),'-','')=REPLACE(REPLACE(%s,' ',''),'-','')
+        pac = q1("""SELECT nome, cpf, data_nascimento FROM pacientes
+                    WHERE email=%s
+                       OR REPLACE(REPLACE(telefone,' ',''),'-','')=REPLACE(REPLACE(%s,' ',''),'-','')
                     LIMIT 1""", (contato, contato))
         if not pac:
             flash('Nenhum cadastro encontrado com esse e-mail ou celular.', 'danger')
@@ -282,7 +253,6 @@ def dashboard():
     total_mes       = q1("SELECT COUNT(*) AS n FROM consultas WHERE YEAR(data_hora)=YEAR(NOW()) AND MONTH(data_hora)=MONTH(NOW())")['n']
     fat_mes_row     = q1("SELECT COALESCE(SUM(valor),0) AS s FROM pagamentos WHERE YEAR(data_pagamento)=YEAR(NOW()) AND MONTH(data_pagamento)=MONTH(NOW())")
     faturamento_mes = float(fat_mes_row['s']) if fat_mes_row else 0.0
-
     proximas = q(
         "SELECT c.id, p.nome AS paciente, d.nome AS dentista, "
         "c.data_hora, c.tipo_procedimento, c.status "
@@ -323,7 +293,6 @@ def pacientes_lista():
 
 
 def _montar_endereco(f):
-    """Monta string de endereço completo a partir dos campos do formulário."""
     partes = []
     if f.get('logradouro'): partes.append(f['logradouro'])
     if f.get('numero'):     partes[-1] = partes[-1] + ', ' + f['numero'] if partes else f['numero']
@@ -419,9 +388,7 @@ def consultas_lista():
     sql += " ORDER BY c.data_hora DESC"
     rows = q(sql, params)
     return render_template('consultas/lista.html',
-                           consultas=rows,
-                           status_filtro=status_f,
-                           data_filtro=data_f)
+                           consultas=rows, status_filtro=status_f, data_filtro=data_f)
 
 
 @app.route('/consultas/nova', methods=['GET', 'POST'])
@@ -437,10 +404,9 @@ def consultas_nova():
         return redirect(url_for('consultas_lista'))
     pacientes = q("SELECT id,nome FROM pacientes ORDER BY nome")
     dentistas = q("SELECT id,nome,especialidade FROM dentistas ORDER BY nome")
-    pid = request.args.get('paciente_id', '')
     return render_template('consultas/form.html',
                            consulta=None, pacientes=pacientes,
-                           dentistas=dentistas, pre_paciente=pid)
+                           dentistas=dentistas, pre_paciente=request.args.get('paciente_id', ''))
 
 
 @app.route('/consultas/<int:cid>')
@@ -478,8 +444,7 @@ def consultas_editar(cid):
     pacientes = q("SELECT id,nome FROM pacientes ORDER BY nome")
     dentistas = q("SELECT id,nome,especialidade FROM dentistas ORDER BY nome")
     return render_template('consultas/form.html',
-                           consulta=c, pacientes=pacientes,
-                           dentistas=dentistas, pre_paciente='')
+                           consulta=c, pacientes=pacientes, dentistas=dentistas, pre_paciente='')
 
 
 @app.route('/consultas/<int:cid>/cancelar', methods=['POST'])
@@ -565,19 +530,17 @@ def faturamento_novo(cid):
         return redirect(url_for('consultas_detalhes', cid=cid))
     if request.method == 'POST':
         f = request.form
-        forma = f.get('forma_pagamento', '')
-        # Campos específicos por método
+        forma     = f.get('forma_pagamento', '')
         bandeira  = f.get('bandeira_credito') or f.get('bandeira_debito') or ''
         parcelas  = int(f.get('parcelas', 1)) if 'Crédito' in forma else 1
         chave_pix = f.get('chave_pix', '') if forma == 'PIX' else ''
-        convenio  = f.get('convenio', '')
         exe(
             "INSERT INTO pagamentos "
             "(consulta_id,valor,data_pagamento,forma_pagamento,convenio,status,"
             " parcelas,bandeira,chave_pix) "
             "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-            (cid, f['valor'], f['data_pagamento'], forma, convenio,
-             f.get('status','pago'), parcelas, bandeira, chave_pix))
+            (cid, f['valor'], f['data_pagamento'], forma, f.get('convenio', ''),
+             f.get('status', 'pago'), parcelas, bandeira, chave_pix))
         flash('Pagamento registrado!', 'success')
         return redirect(url_for('consultas_detalhes', cid=cid))
     return render_template('faturamento/form.html', consulta=consulta)
@@ -596,19 +559,16 @@ def faturamento_recibo(pgid):
 @app.route('/faturamento/nota_fiscal/<int:pgid>')
 @login_required
 def faturamento_nota_fiscal(pgid):
-    from datetime import datetime as _dt
     pg = _get_pagamento_completo(pgid)
     if not pg:
         flash('Pagamento não encontrado.', 'danger')
         return redirect(url_for('faturamento_lista'))
-    # Gera número de NF se ainda não tem
     if not pg.get('numero_nf'):
         max_row = q1("SELECT COALESCE(MAX(numero_nf),0)+1 AS prox FROM pagamentos")
-        prox_nf = max_row['prox']
-        now = _dt.now()
+        now = datetime.now()
         exe("UPDATE pagamentos SET numero_nf=%s, nf_emitida=1, nf_emitida_em=%s WHERE id=%s",
-            (prox_nf, now, pgid))
-        pg['numero_nf']     = prox_nf
+            (max_row['prox'], now, pgid))
+        pg['numero_nf']     = max_row['prox']
         pg['nf_emitida']    = 1
         pg['nf_emitida_em'] = now
     return render_template('faturamento/nota_fiscal.html', pg=pg,
@@ -637,32 +597,24 @@ def relatorios():
     por_status = q("SELECT status, COUNT(*) AS total FROM consultas "
                    "WHERE YEAR(data_hora)=YEAR(NOW()) AND MONTH(data_hora)=MONTH(NOW()) "
                    "GROUP BY status")
-
     fat_mensal = q("SELECT DATE_FORMAT(data_pagamento,'%%Y-%%m') AS mes, "
                    "SUM(valor) AS total, COUNT(*) AS qtd "
                    "FROM pagamentos "
                    "WHERE data_pagamento >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) "
                    "GROUP BY mes ORDER BY mes")
-
     top_proc = q("SELECT tipo_procedimento, COUNT(*) AS total "
                  "FROM consultas WHERE tipo_procedimento IS NOT NULL AND tipo_procedimento != '' "
                  "GROUP BY tipo_procedimento ORDER BY total DESC LIMIT 5")
-
     top_dentistas = q("SELECT d.nome, COUNT(*) AS total "
                       "FROM consultas c JOIN dentistas d ON d.id=c.dentista_id "
                       "GROUP BY d.nome ORDER BY total DESC LIMIT 5")
-
     novos_pac = q("SELECT DATE_FORMAT(criado_em,'%%Y-%%m') AS mes, COUNT(*) AS total "
                   "FROM pacientes "
                   "WHERE criado_em >= DATE_SUB(NOW(), INTERVAL 6 MONTH) "
                   "GROUP BY mes ORDER BY mes")
-
     return render_template('relatorios/index.html',
-                           por_status=por_status,
-                           fat_mensal=fat_mensal,
-                           top_proc=top_proc,
-                           top_dentistas=top_dentistas,
-                           novos_pac=novos_pac)
+                           por_status=por_status, fat_mensal=fat_mensal,
+                           top_proc=top_proc, top_dentistas=top_dentistas, novos_pac=novos_pac)
 
 
 # ---------------------------------------------------------------------------
@@ -675,15 +627,13 @@ def estoque_lista():
     itens      = q("SELECT * FROM estoque ORDER BY categoria, produto")
     alertas    = q("SELECT * FROM estoque WHERE quantidade <= quantidade_minima ORDER BY produto")
     categorias = q("SELECT DISTINCT categoria FROM estoque ORDER BY categoria")
-    return render_template('estoque/lista.html',
-                           itens=itens, alertas=alertas, categorias=categorias)
+    return render_template('estoque/lista.html', itens=itens, alertas=alertas, categorias=categorias)
 
 
 @app.route('/estoque/novo', methods=['POST'])
 @login_required
 def estoque_novo():
-    exe("""INSERT INTO estoque (produto, categoria, quantidade, quantidade_minima, unidade)
-           VALUES (%s,%s,%s,%s,%s)""",
+    exe("INSERT INTO estoque (produto, categoria, quantidade, quantidade_minima, unidade) VALUES (%s,%s,%s,%s,%s)",
         (request.form['produto'].strip(),
          request.form.get('categoria', 'Geral').strip(),
          int(request.form.get('quantidade', 0)),
@@ -696,8 +646,7 @@ def estoque_novo():
 @app.route('/estoque/<int:eid>/editar', methods=['POST'])
 @login_required
 def estoque_editar(eid):
-    exe("""UPDATE estoque SET produto=%s, categoria=%s, quantidade=%s,
-           quantidade_minima=%s, unidade=%s WHERE id=%s""",
+    exe("UPDATE estoque SET produto=%s, categoria=%s, quantidade=%s, quantidade_minima=%s, unidade=%s WHERE id=%s",
         (request.form['produto'].strip(),
          request.form.get('categoria', 'Geral').strip(),
          int(request.form.get('quantidade', 0)),
@@ -711,7 +660,7 @@ def estoque_editar(eid):
 @app.route('/estoque/<int:eid>/movimentar', methods=['POST'])
 @login_required
 def estoque_movimentar(eid):
-    tipo = request.form.get('tipo')  # 'entrada' ou 'saida'
+    tipo = request.form.get('tipo')
     qtd  = int(request.form.get('quantidade', 0))
     if tipo == 'entrada':
         exe("UPDATE estoque SET quantidade = quantidade + %s WHERE id=%s", (qtd, eid))
@@ -745,9 +694,9 @@ def estoque_excluir(eid):
 def dentistas_lista():
     rows = q(
         "SELECT d.*, "
-        "  COUNT(c.id)                                             AS total_consultas, "
-        "  SUM(c.status='concluida')                              AS consultas_concluidas, "
-        "  SUM(c.status='agendada')                               AS consultas_agendadas "
+        "  COUNT(c.id)              AS total_consultas, "
+        "  SUM(c.status='concluida') AS consultas_concluidas, "
+        "  SUM(c.status='agendada')  AS consultas_agendadas "
         "FROM dentistas d "
         "LEFT JOIN consultas c ON c.dentista_id=d.id "
         "GROUP BY d.id ORDER BY d.ativo DESC, d.nome"
@@ -809,8 +758,7 @@ def dentistas_toggle(did):
         return redirect(url_for('dentistas_lista'))
     novo = 0 if dentista['ativo'] else 1
     exe("UPDATE dentistas SET ativo=%s WHERE id=%s", (novo, did))
-    status = 'ativado' if novo else 'desativado'
-    flash(f'{dentista["nome"]} {status}.', 'success')
+    flash(f'{dentista["nome"]} {"ativado" if novo else "desativado"}.', 'success')
     return redirect(url_for('dentistas_lista'))
 
 
