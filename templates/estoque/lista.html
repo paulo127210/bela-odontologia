@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% block title %}Estoque — Bela Odontologia{% endblock %}
+{% block page_title %}Controle de Estoque{% endblock %}
+
+{% block content %}
+
+<!-- Alertas de estoque baixo -->
+{% if alertas %}
+<div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+  <strong>{{ alertas|length }} produto(s) com estoque baixo ou zerado:</strong>
+  {% for a in alertas %}
+    <span class="badge bg-danger ms-1">{{ a.produto }} ({{ a.quantidade }}/{{ a.quantidade_minima }} {{ a.unidade }})</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+  <!-- ═══════ LISTA DE PRODUTOS ═══════ -->
+  <div class="col-lg-8">
+    <div class="card table-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-box-seam me-1 text-primary"></i> Produtos em Estoque</span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovo">
+          <i class="bi bi-plus-circle me-1"></i> Novo Produto
+        </button>
+      </div>
+      <div class="card-body p-0">
+        {% if itens %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th class="text-center">Qtd</th>
+                <th class="text-center">Mín.</th>
+                <th>Unidade</th>
+                <th>Status</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in itens %}
+              <tr class="{{ 'table-danger' if item.quantidade == 0 else ('table-warning' if item.quantidade <= item.quantidade_minima else '') }}">
+                <td class="fw-semibold">{{ item.produto }}</td>
+                <td><span class="badge bg-secondary">{{ item.categoria }}</span></td>
+                <td class="text-center fw-bold {{ 'text-danger' if item.quantidade <= item.quantidade_minima else 'text-success' }}">
+                  {{ item.quantidade }}
+                </td>
+                <td class="text-center text-muted">{{ item.quantidade_minima }}</td>
+                <td class="text-muted small">{{ item.unidade }}</td>
+                <td>
+                  {% if item.quantidade == 0 %}
+                    <span class="badge bg-danger">Zerado</span>
+                  {% elif item.quantidade <= item.quantidade_minima %}
+                    <span class="badge bg-warning text-dark">Baixo</span>
+                  {% else %}
+                    <span class="badge bg-success">Normal</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm">
+                    <!-- Entrada -->
+                    <button class="btn btn-outline-success"
+                            onclick="abrirMovimento({{ item.id }}, '{{ item.produto | e }}', 'entrada')"
+                            title="Entrada de estoque">
+                      <i class="bi bi-plus-lg"></i>
+                    </button>
+                    <!-- Saída -->
+                    <button class="btn btn-outline-warning"
+                            onclick="abrirMovimento({{ item.id }}, '{{ item.produto | e }}', 'saida')"
+                            title="Saída de estoque">
+                      <i class="bi bi-dash-lg"></i>
+                    </button>
+                    <!-- Editar -->
+                    <button class="btn btn-outline-secondary"
+                            onclick='abrirEditar({{ item | tojson }})'
+                            title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <!-- Excluir -->
+                    <form method="POST" action="{{ url_for('estoque_excluir', eid=item.id) }}"
+                          onsubmit="return confirm('Remover {{ item.produto | e }}?')" style="display:inline">
+                      <button type="submit" class="btn btn-outline-danger" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-box fs-1 d-block mb-2 opacity-25"></i>
+          Nenhum produto cadastrado.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ RESUMO / CATEGORIAS ═══════ -->
+  <div class="col-lg-4">
+    <div class="card table-card mb-3">
+      <div class="card-header"><i class="bi bi-bar-chart me-1"></i> Resumo</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Total de produtos</span>
+          <strong>{{ itens | length }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Estoque normal</span>
+          <span class="text-success fw-bold">{{ itens | selectattr('quantidade', 'gt', itens[0].quantidade_minima if itens else 0) | list | length if itens else 0 }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Estoque baixo/zerado</span>
+          <span class="text-danger fw-bold">{{ alertas | length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="card-header"><i class="bi bi-tags me-1"></i> Por Categoria</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Categoria</th><th class="text-center">Itens</th></tr></thead>
+          <tbody>
+            {% set ns = namespace(cat='') %}
+            {% for cat in categorias %}
+            <tr>
+              <td>{{ cat.categoria }}</td>
+              <td class="text-center">
+                {{ itens | selectattr('categoria', 'equalto', cat.categoria) | list | length }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════ MODAL: Novo Produto ══════ -->
+<div class="modal fade" id="modalNovo" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-1 text-primary"></i> Novo Produto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('estoque_novo') }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Produto *</label>
+              <input type="text" name="produto" class="form-control" required placeholder="Nome do produto">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Categoria</label>
+              <input type="text" name="categoria" class="form-control" list="listaCategorias"
+                     placeholder="Ex: EPI, Material, Medicamento">
+              <datalist id="listaCategorias">
+                {% for cat in categorias %}
+                <option value="{{ cat.categoria }}">
+                {% endfor %}
+                <option value="EPI">
+                <option value="Material Dental">
+                <option value="Medicamento">
+                <option value="Limpeza">
+                <option value="Escritório">
+              </datalist>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Unidade</label>
+              <select name="unidade" class="form-select">
+                <option value="unidade">Unidade</option>
+                <option value="par">Par</option>
+                <option value="caixa">Caixa</option>
+                <option value="frasco">Frasco</option>
+                <option value="cápsula">Cápsula</option>
+                <option value="ampola">Ampola</option>
+                <option value="rolo">Rolo</option>
+                <option value="litro">Litro</option>
+                <option value="kg">Kg</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade Atual *</label>
+              <input type="number" name="quantidade" class="form-control" min="0" value="0" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade Mínima *</label>
+              <input type="number" name="quantidade_minima" class="form-control" min="1" value="1" required>
+              <div class="form-text">Alerta quando estoque atingir este valor.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy me-1"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODAL: Editar Produto ══════ -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil me-1"></i> Editar Produto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formEditar">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Produto *</label>
+              <input type="text" name="produto" id="editProduto" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Categoria</label>
+              <input type="text" name="categoria" id="editCategoria" class="form-control" list="listaCategorias">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Unidade</label>
+              <select name="unidade" id="editUnidade" class="form-select">
+                <option value="unidade">Unidade</option>
+                <option value="par">Par</option>
+                <option value="caixa">Caixa</option>
+                <option value="frasco">Frasco</option>
+                <option value="cápsula">Cápsula</option>
+                <option value="ampola">Ampola</option>
+                <option value="rolo">Rolo</option>
+                <option value="litro">Litro</option>
+                <option value="kg">Kg</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade</label>
+              <input type="number" name="quantidade" id="editQtd" class="form-control" min="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade Mínima</label>
+              <input type="number" name="quantidade_minima" id="editQtdMin" class="form-control" min="1">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i> Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODAL: Movimentar Estoque ══════ -->
+<div class="modal fade" id="modalMovimento" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" id="mvHeader">
+        <h5 class="modal-title" id="mvTitulo">Movimentar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formMovimento">
+        <input type="hidden" name="tipo" id="mvTipo">
+        <div class="modal-body">
+          <p class="text-muted small mb-3" id="mvProdutoNome"></p>
+          <label class="form-label fw-semibold">Quantidade *</label>
+          <input type="number" name="quantidade" id="mvQtd" class="form-control form-control-lg"
+                 min="1" value="1" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" id="mvBtn" class="btn btn-success">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function abrirEditar(item) {
+  document.getElementById('formEditar').action = '/estoque/' + item.id + '/editar';
+  document.getElementById('editProduto').value   = item.produto;
+  document.getElementById('editCategoria').value = item.categoria;
+  document.getElementById('editUnidade').value   = item.unidade;
+  document.getElementById('editQtd').value       = item.quantidade;
+  document.getElementById('editQtdMin').value    = item.quantidade_minima;
+  new bootstrap.Modal(document.getElementById('modalEditar')).show();
+}
+
+function abrirMovimento(id, nome, tipo) {
+  const isEntrada = tipo === 'entrada';
+  document.getElementById('formMovimento').action = '/estoque/' + id + '/movimentar';
+  document.getElementById('mvTipo').value         = tipo;
+  document.getElementById('mvProdutoNome').textContent = nome;
+  document.getElementById('mvTitulo').textContent = isEntrada ? '📦 Entrada de Estoque' : '📤 Saída de Estoque';
+  document.getElementById('mvHeader').className   = 'modal-header ' + (isEntrada ? 'bg-success text-white' : 'bg-warning');
+  document.getElementById('mvBtn').className      = 'btn ' + (isEntrada ? 'btn-success' : 'btn-warning');
+  document.getElementById('mvQtd').value = 1;
+  new bootstrap.Modal(document.getElementById('modalMovimento')).show();
+}
+</script>
+{% endblock %}

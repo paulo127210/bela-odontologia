@@ -229,6 +229,39 @@ def login():
     return redirect(url_for('admin_login'))
 
 
+@app.route('/admin/recuperar', methods=['GET', 'POST'])
+def admin_recuperar():
+    """Recuperação de senha do administrador — gera senha temporária e exibe na tela."""
+    temp_senha = None
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        row   = q1("SELECT id, nome FROM usuarios WHERE email=%s AND ativo=1", (email,))
+        if row:
+            import random, string
+            from werkzeug.security import generate_password_hash
+            temp = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+            exe("UPDATE usuarios SET senha=%s WHERE id=%s", (generate_password_hash(temp), row['id']))
+            temp_senha = temp
+        else:
+            flash('E-mail não encontrado.', 'danger')
+    return render_template('admin_recuperar.html', temp_senha=temp_senha)
+
+
+@app.route('/cliente/recuperar', methods=['GET', 'POST'])
+def cliente_recuperar():
+    """Recuperação de acesso do cliente — mostra CPF (mascarado) pelo e-mail ou telefone."""
+    pac = None
+    if request.method == 'POST':
+        contato = request.form.get('contato', '').strip()
+        pac = q1("""SELECT nome, cpf, data_nascimento
+                    FROM pacientes
+                    WHERE email=%s OR REPLACE(REPLACE(telefone,' ',''),'-','')=REPLACE(REPLACE(%s,' ',''),'-','')
+                    LIMIT 1""", (contato, contato))
+        if not pac:
+            flash('Nenhum cadastro encontrado com esse e-mail ou celular.', 'danger')
+    return render_template('cliente_recuperar.html', pac=pac)
+
+
 @app.route('/logout')
 def logout():
     session.pop('usuario_id', None)
@@ -259,10 +292,15 @@ def dashboard():
         "WHERE c.data_hora >= NOW() AND c.status NOT IN ('cancelada') "
         "ORDER BY c.data_hora LIMIT 8"
     )
+    estoque_alertas = q(
+        "SELECT produto, quantidade, quantidade_minima, unidade "
+        "FROM estoque WHERE quantidade <= quantidade_minima ORDER BY produto"
+    )
     return render_template('dashboard.html',
                            total_pacientes=total_pacientes,
                            total_hoje=total_hoje,
                            total_mes=total_mes,
+                           estoque_alertas=estoque_alertas,
                            faturamento_mes=faturamento_mes,
                            proximas=proximas)
 
@@ -625,6 +663,77 @@ def relatorios():
                            top_proc=top_proc,
                            top_dentistas=top_dentistas,
                            novos_pac=novos_pac)
+
+
+# ---------------------------------------------------------------------------
+# Estoque
+# ---------------------------------------------------------------------------
+
+@app.route('/estoque')
+@login_required
+def estoque_lista():
+    itens      = q("SELECT * FROM estoque ORDER BY categoria, produto")
+    alertas    = q("SELECT * FROM estoque WHERE quantidade <= quantidade_minima ORDER BY produto")
+    categorias = q("SELECT DISTINCT categoria FROM estoque ORDER BY categoria")
+    return render_template('estoque/lista.html',
+                           itens=itens, alertas=alertas, categorias=categorias)
+
+
+@app.route('/estoque/novo', methods=['POST'])
+@login_required
+def estoque_novo():
+    exe("""INSERT INTO estoque (produto, categoria, quantidade, quantidade_minima, unidade)
+           VALUES (%s,%s,%s,%s,%s)""",
+        (request.form['produto'].strip(),
+         request.form.get('categoria', 'Geral').strip(),
+         int(request.form.get('quantidade', 0)),
+         int(request.form.get('quantidade_minima', 1)),
+         request.form.get('unidade', 'unidade').strip()))
+    flash(f'Produto "{request.form["produto"]}" cadastrado no estoque.', 'success')
+    return redirect(url_for('estoque_lista'))
+
+
+@app.route('/estoque/<int:eid>/editar', methods=['POST'])
+@login_required
+def estoque_editar(eid):
+    exe("""UPDATE estoque SET produto=%s, categoria=%s, quantidade=%s,
+           quantidade_minima=%s, unidade=%s WHERE id=%s""",
+        (request.form['produto'].strip(),
+         request.form.get('categoria', 'Geral').strip(),
+         int(request.form.get('quantidade', 0)),
+         int(request.form.get('quantidade_minima', 1)),
+         request.form.get('unidade', 'unidade').strip(),
+         eid))
+    flash('Produto atualizado.', 'success')
+    return redirect(url_for('estoque_lista'))
+
+
+@app.route('/estoque/<int:eid>/movimentar', methods=['POST'])
+@login_required
+def estoque_movimentar(eid):
+    tipo = request.form.get('tipo')  # 'entrada' ou 'saida'
+    qtd  = int(request.form.get('quantidade', 0))
+    if tipo == 'entrada':
+        exe("UPDATE estoque SET quantidade = quantidade + %s WHERE id=%s", (qtd, eid))
+        flash(f'+{qtd} unidades adicionadas.', 'success')
+    elif tipo == 'saida':
+        item = q1("SELECT quantidade FROM estoque WHERE id=%s", (eid,))
+        if item and item['quantidade'] >= qtd:
+            exe("UPDATE estoque SET quantidade = quantidade - %s WHERE id=%s", (qtd, eid))
+            flash(f'-{qtd} unidades retiradas.', 'success')
+        else:
+            flash('Quantidade insuficiente em estoque.', 'danger')
+    return redirect(url_for('estoque_lista'))
+
+
+@app.route('/estoque/<int:eid>/excluir', methods=['POST'])
+@login_required
+def estoque_excluir(eid):
+    item = q1("SELECT produto FROM estoque WHERE id=%s", (eid,))
+    if item:
+        exe("DELETE FROM estoque WHERE id=%s", (eid,))
+        flash(f'Produto "{item["produto"]}" removido do estoque.', 'success')
+    return redirect(url_for('estoque_lista'))
 
 
 # ---------------------------------------------------------------------------

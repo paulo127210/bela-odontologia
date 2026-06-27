@@ -330,17 +330,28 @@ footer a:hover { color: #fff; }
 ══════════════════════════════════════ -->
 <section id="home" style="position:relative; line-height:0;">
 
-  <!-- Imagem em tamanho real, responsiva -->
+  <!-- Imagem em tamanho real, responsiva, renderização de alta qualidade -->
   <img src="{{ url_for('static', filename='img/hero.jpg') }}"
-       alt="Bela Odontologia" style="width:100%; display:block;">
+       alt="Bela Odontologia"
+       style="width:100%; display:block;
+              image-rendering: -webkit-optimize-contrast;
+              image-rendering: crisp-edges;
+              filter: contrast(1.08) saturate(1.12) brightness(1.02);">
 
-  <!-- Cobertura sólida com as cores exatas da imagem (apaga o texto baked-in) -->
-  <div style="position:absolute;top:0;right:0;width:40%;height:15%;
+  <!-- Cobertura pixel-perfect que apaga completamente o texto da imagem -->
+  <!-- Gradiente horizontal com as cores exatas amostradas da imagem -->
+  <div style="position:absolute;top:0;right:0;width:54%;height:16%;
               background:linear-gradient(to right,
-                transparent 0%,
-                rgb(104,25,73) 15%,
-                rgb(90,19,63) 55%,
-                rgb(83,26,59) 100%);
+                transparent                  0%,
+                rgba(115,49,87,0.95)         6%,
+                rgb(108,26,75)              14%,
+                rgb(109,25,75)              30%,
+                rgb(110,26,76)              50%,
+                rgb(123,36,87)              62%,
+                rgb(83,26,59)               72%,
+                rgb(66,16,45)               82%,
+                rgb(98,19,67)               91%,
+                rgb(20,21,26)              100%);
               z-index:5;pointer-events:none;"></div>
 
   <!-- Navegação HTML real, posicionada sobre os botões da imagem -->
@@ -569,6 +580,10 @@ footer a:hover { color: #fff; }
             <p class="text-center mt-3" style="font-size:.78rem; color:rgba(255,255,255,.35)">
               <a href="#" onclick="mostrarCamposNovo()" style="color:rgba(255,255,255,.4)">
                 Primeiro acesso? Clique aqui
+              </a>
+              &nbsp;·&nbsp;
+              <a href="{{ url_for('cliente_recuperar') }}" style="color:rgba(255,215,0,.5)">
+                <i class="bi bi-key me-1"></i>Esqueci meu CPF
               </a>
             </p>
           </form>

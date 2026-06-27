@@ -44,6 +44,11 @@
       <i class="bi bi-cash-stack"></i><span class="sidebar-label"> Faturamento</span>
     </a>
 
+    <div class="nav-section sidebar-label">Gestão</div>
+    <a href="{{ url_for('estoque_lista') }}" class="nav-link {{ 'active' if request.endpoint == 'estoque_lista' else '' }}">
+      <i class="bi bi-box-seam"></i><span class="sidebar-label"> Estoque</span>
+    </a>
+
     <div class="nav-section sidebar-label">Análises</div>
     <a href="{{ url_for('relatorios') }}" class="nav-link">
       <i class="bi bi-bar-chart-line"></i><span class="sidebar-label"> Relatórios</span>
