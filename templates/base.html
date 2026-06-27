@@ -25,23 +25,26 @@
 
   <div class="flex-grow-1 overflow-auto pt-1">
     <div class="nav-section sidebar-label">Principal</div>
-    <a href="{{ url_for('dashboard') }}" class="nav-link">
+    <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'dashboard' else '' }}">
       <i class="bi bi-speedometer2"></i><span class="sidebar-label"> Dashboard</span>
     </a>
 
     <div class="nav-section sidebar-label">Clínica</div>
-    <a href="{{ url_for('pacientes_lista') }}" class="nav-link">
+    <a href="{{ url_for('agenda') }}" class="nav-link {{ 'active' if request.endpoint == 'agenda' else '' }}">
+      <i class="bi bi-calendar-week"></i><span class="sidebar-label"> Agenda</span>
+    </a>
+    <a href="{{ url_for('pacientes_lista') }}" class="nav-link {{ 'active' if request.endpoint == 'pacientes_lista' else '' }}">
       <i class="bi bi-people"></i><span class="sidebar-label"> Pacientes</span>
     </a>
-    <a href="{{ url_for('consultas_lista') }}" class="nav-link">
+    <a href="{{ url_for('consultas_lista') }}" class="nav-link {{ 'active' if request.endpoint == 'consultas_lista' else '' }}">
       <i class="bi bi-calendar-check"></i><span class="sidebar-label"> Consultas</span>
     </a>
-    <a href="{{ url_for('dentistas_lista') }}" class="nav-link">
+    <a href="{{ url_for('dentistas_lista') }}" class="nav-link {{ 'active' if request.endpoint == 'dentistas_lista' else '' }}">
       <i class="bi bi-person-badge"></i><span class="sidebar-label"> Dentistas</span>
     </a>
 
     <div class="nav-section sidebar-label">Financeiro</div>
-    <a href="{{ url_for('faturamento_lista') }}" class="nav-link">
+    <a href="{{ url_for('faturamento_lista') }}" class="nav-link {{ 'active' if request.endpoint == 'faturamento_lista' else '' }}">
       <i class="bi bi-cash-stack"></i><span class="sidebar-label"> Faturamento</span>
     </a>
 
@@ -51,15 +54,21 @@
     </a>
 
     <div class="nav-section sidebar-label">Análises</div>
-    <a href="{{ url_for('relatorios') }}" class="nav-link">
+    <a href="{{ url_for('relatorios') }}" class="nav-link {{ 'active' if request.endpoint == 'relatorios' else '' }}">
       <i class="bi bi-bar-chart-line"></i><span class="sidebar-label"> Relatórios</span>
+    </a>
+    <a href="{{ url_for('relatorio_ir', ano=hoje.year) }}" class="nav-link {{ 'active' if request.endpoint == 'relatorio_ir' else '' }}">
+      <i class="bi bi-file-earmark-bar-graph"></i><span class="sidebar-label"> Imposto de Renda</span>
     </a>
   </div>
 
   <div class="sidebar-footer">
     <div class="user-mini d-flex align-items-center gap-2 mb-2 sidebar-label-block">
       <div class="user-avatar-sm">{{ session.usuario_nome[0] | upper }}</div>
-      <span class="small text-truncate" style="color:#c9b8e0">{{ session.usuario_nome }}</span>
+      <div class="sidebar-label" style="min-width:0">
+        <div class="small text-truncate" style="color:#c9b8e0">{{ session.usuario_nome }}</div>
+        <div class="small" style="color:#9b7ec8;font-size:.7rem">{{ session.usuario_perfil | capitalize }}</div>
+      </div>
     </div>
     <a href="{{ url_for('logout') }}" class="nav-link text-danger">
       <i class="bi bi-box-arrow-left"></i><span class="sidebar-label"> Sair</span>
@@ -103,19 +112,19 @@
 
 <!-- Barra de navegação inferior (mobile) -->
 <nav class="mobile-nav">
-  <a href="{{ url_for('dashboard') }}">
+  <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">
     <i class="bi bi-speedometer2"></i>Dashboard
   </a>
-  <a href="{{ url_for('pacientes_lista') }}">
+  <a href="{{ url_for('agenda') }}" class="{{ 'active' if request.endpoint == 'agenda' else '' }}">
+    <i class="bi bi-calendar-week"></i>Agenda
+  </a>
+  <a href="{{ url_for('pacientes_lista') }}" class="{{ 'active' if request.endpoint == 'pacientes_lista' else '' }}">
     <i class="bi bi-people"></i>Pacientes
   </a>
-  <a href="{{ url_for('consultas_lista') }}">
-    <i class="bi bi-calendar-check"></i>Consultas
-  </a>
-  <a href="{{ url_for('faturamento_lista') }}">
+  <a href="{{ url_for('faturamento_lista') }}" class="{{ 'active' if request.endpoint == 'faturamento_lista' else '' }}">
     <i class="bi bi-cash-stack"></i>Faturamento
   </a>
-  <a href="{{ url_for('relatorios') }}">
+  <a href="{{ url_for('relatorios') }}" class="{{ 'active' if request.endpoint == 'relatorios' else '' }}">
     <i class="bi bi-bar-chart-line"></i>Relatórios
   </a>
 </nav>
@@ -123,7 +132,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script>
-// Injeta CSRF token em todos os forms POST automaticamente
 (function(){
   var token = document.querySelector('meta[name="csrf-token"]').content;
   document.querySelectorAll('form').forEach(function(f){

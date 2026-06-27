@@ -9,9 +9,14 @@
     <div class="card table-card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <span><i class="bi bi-person-circle me-1"></i> Dados Pessoais</span>
-        <a href="{{ url_for('pacientes_editar', pid=paciente.id) }}" class="btn btn-sm btn-outline-secondary">
-          <i class="bi bi-pencil"></i>
-        </a>
+        <div class="d-flex gap-1">
+          <a href="{{ url_for('anamnese_form', pid=paciente.id) }}" class="btn btn-sm btn-outline-danger" title="Anamnese">
+            <i class="bi bi-clipboard2-pulse"></i>
+          </a>
+          <a href="{{ url_for('pacientes_editar', pid=paciente.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+            <i class="bi bi-pencil"></i>
+          </a>
+        </div>
       </div>
       <div class="card-body">
         <dl class="row mb-0 small">

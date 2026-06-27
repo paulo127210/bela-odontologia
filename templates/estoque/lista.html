@@ -80,6 +80,11 @@
                             title="Editar">
                       <i class="bi bi-pencil"></i>
                     </button>
+                    <!-- Histórico -->
+                    <a href="{{ url_for('estoque_historico', eid=item.id) }}"
+                       class="btn btn-outline-info" title="Histórico">
+                      <i class="bi bi-clock-history"></i>
+                    </a>
                     <!-- Excluir -->
                     <form method="POST" action="{{ url_for('estoque_excluir', eid=item.id) }}"
                           onsubmit="return confirm('Remover {{ item.produto | e }}?')" style="display:inline">

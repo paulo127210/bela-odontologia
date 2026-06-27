@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Agenda — Bela Odontologia{% endblock %}
+{% block page_title %}Agenda{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<style>
+  #calendar { background:#fff; border-radius:10px; padding:16px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .fc-event { cursor:pointer; font-size:.78rem; }
+  .fc-toolbar-title { font-size:1.1rem !important; font-weight:700; }
+  .fc-button { font-size:.82rem !important; }
+  .status-agendada   { background:#3b82f6 !important; border-color:#2563eb !important; }
+  .status-confirmada { background:#22c55e !important; border-color:#16a34a !important; }
+  .status-realizada  { background:#6366f1 !important; border-color:#4f46e5 !important; }
+  .status-cancelada  { background:#ef4444 !important; border-color:#dc2626 !important; }
+  .legenda-dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Legenda + filtro dentista -->
+<div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+  <div class="d-flex gap-3 flex-wrap small">
+    <span><span class="legenda-dot me-1" style="background:#3b82f6"></span>Agendada</span>
+    <span><span class="legenda-dot me-1" style="background:#22c55e"></span>Confirmada</span>
+    <span><span class="legenda-dot me-1" style="background:#6366f1"></span>Realizada</span>
+    <span><span class="legenda-dot me-1" style="background:#ef4444"></span>Cancelada</span>
+  </div>
+  <div class="ms-auto d-flex gap-2">
+    <select id="filtroDentista" class="form-select form-select-sm" style="width:200px">
+      <option value="">Todos os dentistas</option>
+      {% for d in dentistas %}
+      <option value="{{ d.id }}">{{ d.nome }}</option>
+      {% endfor %}
+    </select>
+    <a href="{{ url_for('consultas_nova') }}" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-circle me-1"></i> Nova Consulta
+    </a>
+  </div>
+</div>
+
+<div id="calendar"></div>
+
+<!-- Modal de detalhes da consulta -->
+<div class="modal fade" id="modalConsulta" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2" id="mcHeader">
+        <h6 class="modal-title" id="mcTitulo">Consulta</h6>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body small" id="mcBody"></div>
+      <div class="modal-footer py-2 gap-1" id="mcFooter"></div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/pt-br.global.min.js"></script>
+<script>
+const STATUS_COLORS = {
+  agendada:   '#3b82f6',
+  confirmada: '#22c55e',
+  realizada:  '#6366f1',
+  cancelada:  '#ef4444'
+};
+
+let calendar;
+
+function carregarEventos(dentista_id) {
+  let url = '/api/agenda';
+  if (dentista_id) url += '?dentista_id=' + dentista_id;
+  calendar.removeAllEventSources();
+  calendar.addEventSource({
+    url: url,
+    failure: function() { alert('Erro ao carregar consultas.'); }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const el = document.getElementById('calendar');
+  calendar = new FullCalendar.Calendar(el, {
+    locale: 'pt-br',
+    initialView: 'timeGridWeek',
+    headerToolbar: {
+      left:   'prev,next today',
+      center: 'title',
+      right:  'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+    },
+    buttonText: { month:'Mês', week:'Semana', day:'Dia', list:'Lista' },
+    slotMinTime: '07:00:00',
+    slotMaxTime: '20:00:00',
+    slotDuration: '00:30:00',
+    allDaySlot: false,
+    height: 'auto',
+    nowIndicator: true,
+    businessHours: { daysOfWeek:[1,2,3,4,5,6], startTime:'08:00', endTime:'18:00' },
+    events: '/api/agenda',
+    eventClick: function(info) {
+      const e = info.event;
+      const p = e.extendedProps;
+      const cor = STATUS_COLORS[p.status] || '#6c757d';
+      document.getElementById('mcHeader').style.background = cor;
+      document.getElementById('mcHeader').style.color = '#fff';
+      document.getElementById('mcTitulo').textContent = e.title;
+      document.getElementById('mcBody').innerHTML =
+        '<div class="mb-1"><i class="bi bi-person me-1"></i><strong>Dentista:</strong> ' + (p.dentista||'—') + '</div>' +
+        '<div class="mb-1"><i class="bi bi-clock me-1"></i><strong>Horário:</strong> ' + e.start.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
+        '<div class="mb-1"><i class="bi bi-activity me-1"></i><strong>Procedimento:</strong> ' + (p.tipo_procedimento||'—') + '</div>' +
+        '<div><i class="bi bi-info-circle me-1"></i><strong>Status:</strong> <span class="badge" style="background:'+cor+'">'+p.status+'</span></div>';
+
+      const footer = document.getElementById('mcFooter');
+      footer.innerHTML =
+        '<a href="/consultas/' + e.id + '" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i>Ver</a>' +
+        '<a href="/consultas/' + e.id + '/editar" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Editar</a>';
+
+      if (p.status !== 'cancelada' && p.status !== 'realizada') {
+        footer.innerHTML +=
+          '<form method="POST" action="/consultas/' + e.id + '/status" style="display:inline">' +
+          '<input type="hidden" name="status" value="confirmada">' +
+          '<button class="btn btn-sm btn-success"><i class="bi bi-check-lg me-1"></i>Confirmar</button></form>';
+      }
+
+      new bootstrap.Modal(document.getElementById('modalConsulta')).show();
+    },
+    dateClick: function(info) {
+      window.location.href = '/consultas/nova?data_hora=' + info.dateStr.slice(0,16);
+    },
+    eventDidMount: function(info) {
+      const s = info.event.extendedProps.status;
+      info.el.classList.add('status-' + s);
+    }
+  });
+  calendar.render();
+
+  document.getElementById('filtroDentista').addEventListener('change', function() {
+    carregarEventos(this.value);
+  });
+});
+</script>
+{% endblock %}

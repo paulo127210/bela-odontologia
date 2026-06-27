@@ -24,6 +24,11 @@ app.config.update(
 csrf = CSRFProtect(app)
 
 
+@app.context_processor
+def inject_globals():
+    return {'hoje': date.today()}
+
+
 @app.template_filter('dt')
 def fmt_dt(value, fmt='%d/%m/%Y %H:%M'):
     if value is None:
@@ -305,19 +310,6 @@ def dashboard():
 # Pacientes
 # ---------------------------------------------------------------------------
 
-@app.route('/pacientes')
-@login_required
-def pacientes_lista():
-    busca = request.args.get('q', '').strip()
-    if busca:
-        like = f'%{busca}%'
-        rows = q("SELECT * FROM pacientes WHERE nome ILIKE %s OR cpf ILIKE %s OR telefone ILIKE %s ORDER BY nome",
-                 (like, like, like))
-    else:
-        rows = q("SELECT * FROM pacientes ORDER BY nome")
-    return render_template('pacientes/lista.html', pacientes=rows, q=busca)
-
-
 def _montar_endereco(f):
     partes = []
     if f.get('logradouro'): partes.append(f['logradouro'])
@@ -401,20 +393,30 @@ def pacientes_excluir(pid):
 def consultas_lista():
     status_f = request.args.get('status', '')
     data_f   = request.args.get('data', '')
+    page     = max(1, int(request.args.get('page', 1)))
+    per_page = 20
     sql = ("SELECT c.id, p.nome AS paciente, d.nome AS dentista, "
            "c.data_hora, c.tipo_procedimento, c.status "
            "FROM consultas c "
            "JOIN pacientes p ON p.id=c.paciente_id "
            "JOIN dentistas d ON d.id=c.dentista_id WHERE 1=1 ")
     params = []
+    # dentista só vê as próprias consultas
+    if session.get('usuario_perfil') == 'dentista' and session.get('usuario_dentista_id'):
+        sql += " AND c.dentista_id=%s"; params.append(session['usuario_dentista_id'])
     if status_f:
         sql += " AND c.status=%s"; params.append(status_f)
     if data_f:
         sql += " AND c.data_hora::date=%s"; params.append(data_f)
     sql += " ORDER BY c.data_hora DESC"
-    rows = q(sql, params)
+
+    total_rows = len(q(sql, params))
+    sql += f" LIMIT {per_page} OFFSET {(page-1)*per_page}"
+    rows  = q(sql, params)
+    total_pages = max(1, -(-total_rows // per_page))
     return render_template('consultas/lista.html',
-                           consultas=rows, status_filtro=status_f, data_filtro=data_f)
+                           consultas=rows, status_filtro=status_f, data_filtro=data_f,
+                           page=page, total_pages=total_pages, total_rows=total_rows)
 
 
 @app.route('/consultas/nova', methods=['GET', 'POST'])
@@ -479,6 +481,17 @@ def consultas_cancelar(cid):
     exe("UPDATE consultas SET status='cancelada' WHERE id=%s", (cid,))
     flash('Consulta cancelada.', 'warning')
     return redirect(url_for('consultas_lista'))
+
+
+@app.route('/consultas/<int:cid>/status', methods=['POST'])
+@login_required
+def consultas_status(cid):
+    novo = request.form.get('status', '')
+    if novo in ('agendada', 'confirmada', 'realizada', 'cancelada'):
+        exe("UPDATE consultas SET status=%s WHERE id=%s", (novo, cid))
+        flash(f'Status atualizado para "{novo}".', 'success')
+    next_url = request.form.get('next') or request.referrer or url_for('consultas_lista')
+    return redirect(next_url)
 
 
 # ---------------------------------------------------------------------------
@@ -783,17 +796,37 @@ def estoque_editar(eid):
 def estoque_movimentar(eid):
     tipo = request.form.get('tipo')
     qtd  = int(request.form.get('quantidade', 0))
+    obs  = request.form.get('observacao', '').strip()
+    uid  = session.get('usuario_id')
     if tipo == 'entrada':
         exe("UPDATE estoque SET quantidade = quantidade + %s WHERE id=%s", (qtd, eid))
+        exe("INSERT INTO estoque_movimentos (estoque_id,tipo,quantidade,usuario_id,observacao) VALUES (%s,%s,%s,%s,%s)",
+            (eid, 'entrada', qtd, uid, obs or None))
         flash(f'+{qtd} unidades adicionadas.', 'success')
     elif tipo == 'saida':
         item = q1("SELECT quantidade FROM estoque WHERE id=%s", (eid,))
         if item and item['quantidade'] >= qtd:
             exe("UPDATE estoque SET quantidade = quantidade - %s WHERE id=%s", (qtd, eid))
+            exe("INSERT INTO estoque_movimentos (estoque_id,tipo,quantidade,usuario_id,observacao) VALUES (%s,%s,%s,%s,%s)",
+                (eid, 'saida', qtd, uid, obs or None))
             flash(f'-{qtd} unidades retiradas.', 'success')
         else:
             flash('Quantidade insuficiente em estoque.', 'danger')
     return _estoque_redirect()
+
+
+@app.route('/estoque/<int:eid>/historico')
+@login_required
+def estoque_historico(eid):
+    item = q1("SELECT * FROM estoque WHERE id=%s", (eid,))
+    if not item:
+        flash('Produto não encontrado.', 'danger')
+        return redirect(url_for('estoque_lista'))
+    movimentos = q(
+        "SELECT m.*, u.nome AS usuario FROM estoque_movimentos m "
+        "LEFT JOIN usuarios u ON u.id=m.usuario_id "
+        "WHERE m.estoque_id=%s ORDER BY m.criado_em DESC LIMIT 100", (eid,))
+    return render_template('estoque/historico.html', item=item, movimentos=movimentos)
 
 
 @app.route('/estoque/<int:eid>/excluir', methods=['POST'])
@@ -881,6 +914,152 @@ def dentistas_toggle(did):
     exe("UPDATE dentistas SET ativo=%s WHERE id=%s", (novo, did))
     flash(f'{dentista["nome"]} {"ativado" if novo else "desativado"}.', 'success')
     return redirect(url_for('dentistas_lista'))
+
+
+# ---------------------------------------------------------------------------
+# Agenda visual
+# ---------------------------------------------------------------------------
+
+@app.route('/agenda')
+@login_required
+def agenda():
+    dentistas = q("SELECT id, nome FROM dentistas WHERE ativo=TRUE ORDER BY nome")
+    return render_template('agenda/index.html', dentistas=dentistas)
+
+
+@app.route('/api/agenda')
+@login_required
+def api_agenda():
+    from flask import jsonify
+    dentista_id = request.args.get('dentista_id', '')
+    sql = ("SELECT c.id, p.nome AS paciente, d.nome AS dentista, "
+           "c.data_hora, c.tipo_procedimento, c.status "
+           "FROM consultas c "
+           "JOIN pacientes p ON p.id=c.paciente_id "
+           "JOIN dentistas d ON d.id=c.dentista_id WHERE 1=1")
+    params = []
+    if dentista_id:
+        sql += " AND c.dentista_id=%s"; params.append(dentista_id)
+    if session.get('usuario_perfil') == 'dentista' and session.get('usuario_dentista_id'):
+        sql += " AND c.dentista_id=%s"; params.append(session['usuario_dentista_id'])
+    rows = q(sql, params)
+    cores = {'agendada': '#3b82f6', 'confirmada': '#22c55e',
+             'realizada': '#6366f1', 'cancelada': '#ef4444'}
+    events = []
+    for r in rows:
+        dh = str(r['data_hora'])
+        events.append({
+            'id':    r['id'],
+            'title': r['paciente'],
+            'start': dh[:16],
+            'end':   dh[:11] + str(int(dh[11:13]) + 1).zfill(2) + dh[13:16],
+            'color': cores.get(r['status'], '#6c757d'),
+            'extendedProps': {
+                'dentista':         r['dentista'],
+                'tipo_procedimento': r['tipo_procedimento'] or '',
+                'status':           r['status'],
+            }
+        })
+    return jsonify(events)
+
+
+# ---------------------------------------------------------------------------
+# Anamnese
+# ---------------------------------------------------------------------------
+
+@app.route('/pacientes/<int:pid>/anamnese', methods=['GET', 'POST'])
+@login_required
+def anamnese_form(pid):
+    paciente = q1("SELECT * FROM pacientes WHERE id=%s", (pid,))
+    if not paciente:
+        flash('Paciente não encontrado.', 'danger')
+        return redirect(url_for('pacientes_lista'))
+    a = q1("SELECT * FROM anamnese WHERE paciente_id=%s", (pid,))
+    if request.method == 'POST':
+        f = request.form
+        def cb(name): return name in f
+        if a:
+            exe("UPDATE anamnese SET alergias=%s,medicamentos=%s,doencas=%s,cirurgias=%s,"
+                "gestante=%s,fumante=%s,pressao=%s,diabetes=%s,cardiopatia=%s,observacoes=%s "
+                "WHERE paciente_id=%s",
+                (f.get('alergias'), f.get('medicamentos'), f.get('doencas'), f.get('cirurgias'),
+                 cb('gestante'), cb('fumante'), f.get('pressao'),
+                 cb('diabetes'), cb('cardiopatia'), f.get('observacoes'), pid))
+        else:
+            exe("INSERT INTO anamnese (paciente_id,alergias,medicamentos,doencas,cirurgias,"
+                "gestante,fumante,pressao,diabetes,cardiopatia,observacoes) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (pid, f.get('alergias'), f.get('medicamentos'), f.get('doencas'), f.get('cirurgias'),
+                 cb('gestante'), cb('fumante'), f.get('pressao'),
+                 cb('diabetes'), cb('cardiopatia'), f.get('observacoes')))
+        flash('Anamnese salva com sucesso!', 'success')
+        return redirect(url_for('pacientes_detalhes', pid=pid))
+    return render_template('anamnese/form.html', paciente=paciente, a=a)
+
+
+# ---------------------------------------------------------------------------
+# Exportar CSV
+# ---------------------------------------------------------------------------
+
+@app.route('/faturamento/exportar')
+@login_required
+def faturamento_exportar():
+    import csv, io
+    from flask import Response
+    from datetime import date as _date, timedelta
+    periodo  = request.args.get('periodo', 'mes')
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    hoje = _date.today()
+    if periodo == 'hoje':   data_ini = data_fim = hoje.isoformat()
+    elif periodo == 'semana': data_ini = (hoje - timedelta(days=hoje.weekday())).isoformat(); data_fim = hoje.isoformat()
+    elif periodo == 'mes':  data_ini = hoje.replace(day=1).isoformat(); data_fim = hoje.isoformat()
+    elif periodo == 'ano':  data_ini = hoje.replace(month=1,day=1).isoformat(); data_fim = hoje.isoformat()
+    sql = ("SELECT pg.id, p.nome AS paciente, c.tipo_procedimento, pg.forma_pagamento, "
+           "pg.valor, pg.data_pagamento, pg.status, pg.parcelas, pg.convenio "
+           "FROM pagamentos pg JOIN consultas c ON c.id=pg.consulta_id "
+           "JOIN pacientes p ON p.id=c.paciente_id WHERE 1=1")
+    params = []
+    if data_ini: sql += " AND pg.data_pagamento >= %s"; params.append(data_ini)
+    if data_fim: sql += " AND pg.data_pagamento <= %s"; params.append(data_fim)
+    sql += " ORDER BY pg.data_pagamento DESC"
+    rows = q(sql, params)
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(['ID','Paciente','Procedimento','Forma de Pagamento','Valor (R$)',
+                'Data','Status','Parcelas','Convênio'])
+    for r in rows:
+        w.writerow([r['id'], r['paciente'], r['tipo_procedimento'] or '',
+                    r['forma_pagamento'] or '', f"{float(r['valor']):.2f}",
+                    r['data_pagamento'], r['status'], r['parcelas'], r['convenio'] or ''])
+    output = out.getvalue().encode('utf-8-sig')
+    return Response(output, mimetype='text/csv',
+                    headers={'Content-Disposition': f'attachment;filename=faturamento_{periodo}_{hoje}.csv'})
+
+
+# ---------------------------------------------------------------------------
+# Pacientes — paginação
+# ---------------------------------------------------------------------------
+
+@app.route('/pacientes')
+@login_required
+def pacientes_lista():
+    busca    = request.args.get('q', '').strip()
+    page     = max(1, int(request.args.get('page', 1)))
+    per_page = 20
+    if busca:
+        like = f'%{busca}%'
+        sql    = "SELECT * FROM pacientes WHERE nome ILIKE %s OR cpf ILIKE %s OR telefone ILIKE %s ORDER BY nome"
+        params = (like, like, like)
+    else:
+        sql    = "SELECT * FROM pacientes ORDER BY nome"
+        params = ()
+    total_rows  = len(q(sql, params))
+    sql_page    = sql + f" LIMIT {per_page} OFFSET {(page-1)*per_page}"
+    rows        = q(sql_page, params)
+    total_pages = max(1, -(-total_rows // per_page))
+    return render_template('pacientes/lista.html', pacientes=rows, q=busca,
+                           page=page, total_pages=total_pages, total_rows=total_rows)
 
 
 # ---------------------------------------------------------------------------

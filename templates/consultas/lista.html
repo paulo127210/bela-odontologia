@@ -5,7 +5,9 @@
 {% block content %}
 <div class="card table-card">
   <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
-    <span><i class="bi bi-calendar-check me-1"></i> Agenda de Consultas</span>
+    <span><i class="bi bi-calendar-check me-1"></i> Agenda de Consultas
+      <span class="badge bg-secondary ms-1">{{ total_rows }}</span>
+    </span>
     <div class="d-flex flex-wrap gap-2">
       <form class="d-flex flex-wrap gap-2" method="GET">
         <input type="date" name="data" value="{{ data_filtro }}" class="form-control form-control-sm" style="width:150px">
@@ -20,6 +22,9 @@
         <a href="{{ url_for('consultas_lista') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></a>
         {% endif %}
       </form>
+      <a href="{{ url_for('agenda') }}" class="btn btn-sm btn-outline-info">
+        <i class="bi bi-calendar-week me-1"></i> Ver Agenda
+      </a>
       <a href="{{ url_for('consultas_nova') }}" class="btn btn-sm btn-primary">
         <i class="bi bi-plus-circle me-1"></i> Nova
       </a>
@@ -28,9 +33,12 @@
   <div class="card-body p-0">
     {% if consultas %}
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr><th>#</th><th>Paciente</th><th>Dentista</th><th>Data / Hora</th><th>Procedimento</th><th>Status</th><th></th></tr>
+      <table class="table table-hover mb-0 small">
+        <thead class="table-light">
+          <tr>
+            <th>#</th><th>Paciente</th><th>Dentista</th><th>Data / Hora</th>
+            <th>Procedimento</th><th>Status</th><th class="text-center">Ações</th>
+          </tr>
         </thead>
         <tbody>
           {% for c in consultas %}
@@ -40,15 +48,68 @@
             <td>{{ c.dentista }}</td>
             <td>{{ c.data_hora | dt }}</td>
             <td>{{ c.tipo_procedimento or '—' }}</td>
-            <td><span class="badge rounded-pill badge-{{ c.status }}">{{ c.status | capitalize }}</span></td>
-            <td class="text-end">
-              <a href="{{ url_for('consultas_detalhes', cid=c.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+            <td>
+              <!-- Dropdown de status inline -->
+              <div class="dropdown">
+                <button class="btn btn-sm badge-{{ c.status }} dropdown-toggle py-0 px-2 border-0"
+                        data-bs-toggle="dropdown" style="font-size:.75rem">
+                  {{ c.status | capitalize }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-sm shadow">
+                  {% for s, label, icon in [
+                    ('agendada','Agendada','bi-calendar'),
+                    ('confirmada','Confirmada','bi-check-circle'),
+                    ('realizada','Realizada','bi-check-circle-fill'),
+                    ('cancelada','Cancelada','bi-x-circle')
+                  ] %}
+                  <li>
+                    <form method="POST" action="{{ url_for('consultas_status', cid=c.id) }}">
+                      <input type="hidden" name="status" value="{{ s }}">
+                      <input type="hidden" name="next" value="lista">
+                      <button type="submit" class="dropdown-item small {{ 'fw-bold' if c.status==s else '' }}">
+                        <i class="bi {{ icon }} me-1"></i>{{ label }}
+                      </button>
+                    </form>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </td>
+            <td class="text-center">
+              <a href="{{ url_for('consultas_detalhes', cid=c.id) }}" class="btn btn-sm btn-outline-primary py-0"><i class="bi bi-eye"></i></a>
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    <!-- Paginação -->
+    {% if total_pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top small text-muted">
+      <span>Página {{ page }} de {{ total_pages }} · {{ total_rows }} consultas</span>
+      <nav>
+        <ul class="pagination pagination-sm mb-0 gap-1">
+          <li class="page-item {{ 'disabled' if page==1 }}">
+            <a class="page-link" href="?page={{ page-1 }}&status={{ status_filtro }}&data={{ data_filtro }}">‹</a>
+          </li>
+          {% for p in range(1, total_pages+1) %}
+          {% if p == page or p == 1 or p == total_pages or (p >= page-2 and p <= page+2) %}
+          <li class="page-item {{ 'active' if p==page }}">
+            <a class="page-link" href="?page={{ p }}&status={{ status_filtro }}&data={{ data_filtro }}">{{ p }}</a>
+          </li>
+          {% elif p == page-3 or p == page+3 %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+          {% endfor %}
+          <li class="page-item {{ 'disabled' if page==total_pages }}">
+            <a class="page-link" href="?page={{ page+1 }}&status={{ status_filtro }}&data={{ data_filtro }}">›</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
     {% else %}
     <div class="text-center text-muted py-5">
       <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
