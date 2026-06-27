@@ -37,6 +37,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hid
     padding: 5px 14px;
 }
 .nav-img-btn.nav-agendar:hover { background: rgba(184,134,11,.4); }
+.btn-admin-destaque {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.2);
+    color: rgba(255,255,255,.65);
+    font-size: .85rem;
+    font-weight: 600;
+    padding: 9px 22px;
+    border-radius: 30px;
+    text-decoration: none;
+    transition: all .2s;
+}
+.btn-admin-destaque:hover {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.45);
+    color: #fff;
+}
 .btn-flutuante {
     background: rgba(30,10,46,.75);
     color: rgba(255,255,255,.8);
@@ -316,13 +334,17 @@ footer a:hover { color: #fff; }
   <img src="{{ url_for('static', filename='img/hero.jpg') }}"
        alt="Bela Odontologia" style="width:100%; display:block;">
 
-  <!-- Cobertura suave sobre a área da nav da imagem (para ocultar o texto estático) -->
-  <div style="position:absolute;top:0;right:0;width:38%;height:14%;
-              background:linear-gradient(to right,transparent,rgba(80,10,110,.85) 30%);
+  <!-- Cobertura sólida com as cores exatas da imagem (apaga o texto baked-in) -->
+  <div style="position:absolute;top:0;right:0;width:40%;height:15%;
+              background:linear-gradient(to right,
+                transparent 0%,
+                rgb(104,25,73) 15%,
+                rgb(90,19,63) 55%,
+                rgb(83,26,59) 100%);
               z-index:5;pointer-events:none;"></div>
 
   <!-- Navegação HTML real, posicionada sobre os botões da imagem -->
-  <nav style="position:absolute;top:0;right:0;width:38%;height:14%;
+  <nav style="position:absolute;top:0;right:0;width:40%;height:15%;
               display:flex;align-items:center;justify-content:flex-end;
               gap:clamp(8px,2vw,28px);padding-right:2%;z-index:10;">
     <a href="#home"     class="nav-img-btn nav-active">Home</a>
@@ -427,7 +449,14 @@ footer a:hover { color: #fff; }
 <section id="agendar">
   <div class="container">
     <h2>Área do Paciente</h2>
-    <p>Faça login ou cadastre-se para agendar sua consulta online.</p>
+    <p>Informe seu CPF e data de nascimento para entrar ou se cadastrar.</p>
+
+    <!-- Botão de login do administrador em destaque -->
+    <div class="text-center mb-4">
+      <a href="{{ url_for('admin_login') }}" class="btn-admin-destaque">
+        <i class="bi bi-shield-lock me-2"></i>Login do Administrador
+      </a>
+    </div>
 
     {% if cliente %}
     <!-- Cliente já logado — mostra formulário de agendamento -->
@@ -502,7 +531,9 @@ footer a:hover { color: #fff; }
             <div class="mb-3">
               <label class="form-label-dark">CPF *</label>
               <input type="text" name="cpf" id="campoCpf" class="form-control form-control-dark"
-                     placeholder="000.000.000-00" required maxlength="14" autocomplete="off">
+                     placeholder="Somente 11 dígitos" required maxlength="11"
+                     inputmode="numeric" pattern="[0-9]{11}" autocomplete="off"
+                     oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
             </div>
             <div class="mb-3">
               <label class="form-label-dark">Data de Nascimento *</label>
