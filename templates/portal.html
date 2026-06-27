@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bela Odontologia — Cuidando do Seu Sorriso</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+:root {
+    --roxo: #6a1f9e;
+    --roxo-dark: #1e0a2e;
+    --ouro: #b8860b;
+    --ouro-light: #d4a017;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hidden; }
+
+/* ── NAVEGAÇÃO REAL SOBRE A IMAGEM ── */
+.nav-img-btn {
+    color: #fff;
+    text-decoration: none;
+    font-size: clamp(.8rem, 1.2vw, 1rem);
+    font-weight: 600;
+    letter-spacing: .3px;
+    padding: 5px 2px;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+    white-space: nowrap;
+}
+.nav-img-btn:hover { color: #d4a017; border-bottom-color: #d4a017; }
+.nav-img-btn.nav-active { color: #d4a017; border-bottom-color: #d4a017; }
+.nav-img-btn.nav-agendar {
+    background: rgba(184,134,11,.2);
+    border: 1px solid rgba(184,134,11,.5);
+    border-radius: 20px;
+    padding: 5px 14px;
+}
+.nav-img-btn.nav-agendar:hover { background: rgba(184,134,11,.4); }
+.btn-flutuante {
+    background: rgba(30,10,46,.75);
+    color: rgba(255,255,255,.8);
+    font-size: .75rem;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.2);
+    backdrop-filter: blur(4px);
+    transition: all .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.btn-flutuante:hover { color: #fff; border-color: rgba(255,255,255,.5); }
+
+
+/* ── HERO CONTENT ── */
+.hero-body {
+    position: relative;
+    z-index: 5;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px 60px;
+    text-align: center;
+    color: #fff;
+}
+.hero-body h1 {
+    font-size: clamp(1.6rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -.5px;
+    text-shadow: 0 2px 20px rgba(0,0,0,.5);
+    margin-bottom: 12px;
+}
+.hero-body h1 span { color: var(--ouro-light); }
+.hero-body p {
+    font-size: clamp(.95rem, 2vw, 1.2rem);
+    color: rgba(255,255,255,.85);
+    max-width: 560px;
+    margin-bottom: 32px;
+}
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.btn-hero-primary {
+    background: linear-gradient(135deg, var(--ouro), var(--ouro-light));
+    color: #1e0a2e;
+    font-weight: 700;
+    font-size: 1.05rem;
+    padding: 14px 32px;
+    border-radius: 50px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: transform .2s, filter .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.btn-hero-primary:hover { transform: translateY(-2px); filter: brightness(1.1); color: #1e0a2e; }
+.btn-hero-outline {
+    background: transparent;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 13px 28px;
+    border-radius: 50px;
+    border: 2px solid rgba(255,255,255,.6);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.btn-hero-outline:hover { background: rgba(255,255,255,.15); color: #fff; }
+
+/* ── SERVIÇOS ── */
+#servicos {
+    background: var(--roxo-dark);
+    padding: 70px 20px;
+    text-align: center;
+}
+#servicos h2 {
+    color: var(--ouro-light);
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+#servicos p.lead { color: rgba(255,255,255,.65); margin-bottom: 48px; font-size: .95rem; }
+.servico-card {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 28px 20px;
+    color: #fff;
+    text-align: center;
+    transition: transform .2s, border-color .2s;
+    height: 100%;
+}
+.servico-card:hover { transform: translateY(-4px); border-color: var(--ouro); }
+.servico-card .icon { font-size: 2.4rem; color: var(--ouro-light); margin-bottom: 12px; }
+.servico-card h5 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+.servico-card p { font-size: .82rem; color: rgba(255,255,255,.6); margin: 0; }
+
+/* ── SOBRE NÓS ── */
+#sobre {
+    background: linear-gradient(135deg, #2d0a47, #1e0a2e);
+    padding: 70px 20px;
+    color: #fff;
+}
+#sobre h2 { color: var(--ouro-light); font-size: 1.8rem; font-weight: 700; margin-bottom: 16px; }
+#sobre p { color: rgba(255,255,255,.75); font-size: .95rem; line-height: 1.8; }
+#sobre .sobre-img {
+    border-radius: 20px;
+    width: 100%;
+    max-height: 380px;
+    object-fit: cover;
+    box-shadow: 0 12px 48px rgba(0,0,0,.4);
+}
+
+/* ── ÁREA CLIENTE / LOGIN / CADASTRO ── */
+#agendar {
+    background: #0d0616;
+    padding: 70px 20px;
+}
+#agendar h2 {
+    color: var(--ouro-light);
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+}
+#agendar > .container > p {
+    color: rgba(255,255,255,.6);
+    text-align: center;
+    margin-bottom: 48px;
+}
+.cliente-box {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 20px;
+    padding: 36px 32px;
+    color: #fff;
+}
+.cliente-box h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cliente-box h4 i { color: var(--ouro-light); font-size: 1.3rem; }
+.cliente-box .nav-tabs { border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 24px; }
+.cliente-box .nav-tabs .nav-link {
+    color: rgba(255,255,255,.5);
+    border: none;
+    font-weight: 600;
+    padding: 8px 0;
+    margin-right: 24px;
+    border-radius: 0;
+    border-bottom: 3px solid transparent;
+}
+.cliente-box .nav-tabs .nav-link.active {
+    color: var(--ouro-light);
+    background: transparent;
+    border-bottom-color: var(--ouro-light);
+}
+.form-control-dark {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.15);
+    color: #fff;
+    border-radius: 10px;
+}
+.form-control-dark::placeholder { color: rgba(255,255,255,.35); }
+.form-control-dark:focus {
+    background: rgba(255,255,255,.1);
+    border-color: var(--ouro);
+    color: #fff;
+    box-shadow: 0 0 0 .2rem rgba(184,134,11,.25);
+}
+.form-label-dark { color: rgba(255,255,255,.75); font-size: .85rem; font-weight: 600; }
+.btn-ouro {
+    background: linear-gradient(135deg, var(--ouro), var(--ouro-light));
+    color: #1e0a2e;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    width: 100%;
+    font-size: .95rem;
+    cursor: pointer;
+    transition: filter .2s;
+}
+.btn-ouro:hover { filter: brightness(1.1); }
+.divider-or {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: rgba(255,255,255,.35);
+    font-size: .8rem;
+    margin: 24px 0;
+}
+.divider-or::before, .divider-or::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.12);
+}
+
+/* Cliente logado */
+.cliente-logado-box {
+    background: linear-gradient(135deg, rgba(139,47,201,.2), rgba(184,134,11,.1));
+    border: 1px solid rgba(184,134,11,.3);
+    border-radius: 20px;
+    padding: 24px;
+    color: #fff;
+    margin-bottom: 24px;
+}
+.cliente-logado-box h5 { color: var(--ouro-light); margin-bottom: 4px; }
+.badge-status-agendada   { background: #1565c0; }
+.badge-status-realizada  { background: #2e7d32; }
+.badge-status-cancelada  { background: #c62828; }
+.badge-status-confirmada { background: #e65100; }
+
+/* ── FOOTER ── */
+footer {
+    background: #080010;
+    padding: 30px 20px;
+    text-align: center;
+    color: rgba(255,255,255,.35);
+    font-size: .8rem;
+    border-top: 1px solid rgba(255,255,255,.05);
+}
+footer a { color: rgba(255,255,255,.5); text-decoration: none; }
+footer a:hover { color: #fff; }
+
+/* ── FLASHES ── */
+.flash-container {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 9999;
+    width: 320px;
+}
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+    .portal-nav { padding: 12px 16px; }
+    .portal-nav .nav-links { display: none; }
+    .portal-nav .btn-admin { font-size: .7rem; padding: 4px 10px; }
+    .cliente-box { padding: 24px 16px; }
+    #servicos, #sobre, #agendar { padding: 48px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Flash messages -->
+<div class="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible shadow" role="alert" style="font-size:.85rem">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<!-- ══════════════════════════════════════
+     HERO — Imagem com links sobrepostos
+══════════════════════════════════════ -->
+<section id="home" style="position:relative; line-height:0;">
+
+  <!-- Imagem em tamanho real, responsiva -->
+  <img src="{{ url_for('static', filename='img/hero.jpg') }}"
+       alt="Bela Odontologia" style="width:100%; display:block;">
+
+  <!-- Cobertura suave sobre a área da nav da imagem (para ocultar o texto estático) -->
+  <div style="position:absolute;top:0;right:0;width:38%;height:14%;
+              background:linear-gradient(to right,transparent,rgba(80,10,110,.85) 30%);
+              z-index:5;pointer-events:none;"></div>
+
+  <!-- Navegação HTML real, posicionada sobre os botões da imagem -->
+  <nav style="position:absolute;top:0;right:0;width:38%;height:14%;
+              display:flex;align-items:center;justify-content:flex-end;
+              gap:clamp(8px,2vw,28px);padding-right:2%;z-index:10;">
+    <a href="#home"     class="nav-img-btn nav-active">Home</a>
+    <a href="#sobre"    class="nav-img-btn">Sobre Nós</a>
+    <a href="#servicos" class="nav-img-btn">Serviços</a>
+    <a href="#agendar"  class="nav-img-btn nav-agendar">Agendar</a>
+  </nav>
+
+  <!-- Botão flutuante: Admin ou cliente logado -->
+  <div style="position:absolute;bottom:2%;right:1%;z-index:10;">
+    {% if cliente %}
+    <a href="{{ url_for('cliente_logout') }}" class="btn-flutuante">
+      <i class="bi bi-person-check"></i> {{ cliente.nome.split()[0] }} · Sair
+    </a>
+    {% else %}
+    <a href="{{ url_for('admin_login') }}" class="btn-flutuante">
+      <i class="bi bi-shield-lock"></i> Área Admin
+    </a>
+    {% endif %}
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════
+     SERVIÇOS
+══════════════════════════════════════ -->
+<section id="servicos">
+  <div class="container">
+    <h2>Nossos Serviços</h2>
+    <p class="lead">Tratamentos completos para toda a família</p>
+    <div class="row g-4 justify-content-center">
+      <div class="col-6 col-md-3">
+        <div class="servico-card">
+          <div class="icon"><i class="bi bi-star-fill"></i></div>
+          <h5>Estética Dentária</h5>
+          <p>Facetas, clareamento e lentes de contato dental</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="servico-card">
+          <div class="icon"><i class="bi bi-arrow-repeat"></i></div>
+          <h5>Ortodontia</h5>
+          <p>Invisalign e aparelhos de última geração</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="servico-card">
+          <div class="icon"><i class="bi bi-plus-circle-fill"></i></div>
+          <h5>Implantes</h5>
+          <p>Implantes dentários precisos e seguros</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="servico-card">
+          <div class="icon"><i class="bi bi-shield-check"></i></div>
+          <h5>Prevenção</h5>
+          <p>Profilaxia e cuidados para sua saúde bucal</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SOBRE NÓS
+══════════════════════════════════════ -->
+<section id="sobre">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <img src="{{ url_for('static', filename='img/hero.jpg') }}"
+             alt="Clínica Bela Odontologia" class="sobre-img">
+      </div>
+      <div class="col-lg-6">
+        <h2>Sobre a Bela Odontologia</h2>
+        <p class="mt-3">
+          Somos uma clínica odontológica comprometida com a excelência no atendimento
+          e na saúde bucal dos nossos pacientes. Nossa equipe de profissionais altamente
+          qualificados utiliza as mais modernas tecnologias para garantir tratamentos
+          eficazes e seguros.
+        </p>
+        <p class="mt-3">
+          Localizada na Rua da Saúde, 123, atendemos com horários flexíveis para
+          se adaptar à sua rotina.
+        </p>
+        <div class="d-flex gap-3 mt-4 flex-wrap">
+          <div style="color:rgba(255,255,255,.7); font-size:.9rem">
+            <i class="bi bi-telephone me-2" style="color:var(--ouro-light)"></i>(XX) XXXX-XXXX
+          </div>
+          <div style="color:rgba(255,255,255,.7); font-size:.9rem">
+            <i class="bi bi-geo-alt me-2" style="color:var(--ouro-light)"></i>Rua da Saúde, 123
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     ÁREA DO CLIENTE / AGENDAMENTO
+══════════════════════════════════════ -->
+<section id="agendar">
+  <div class="container">
+    <h2>Área do Paciente</h2>
+    <p>Faça login ou cadastre-se para agendar sua consulta online.</p>
+
+    {% if cliente %}
+    <!-- Cliente já logado — mostra formulário de agendamento -->
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="cliente-logado-box">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-person-check-fill text-warning fs-5"></i>
+            <h5 class="mb-0">Olá, {{ cliente.nome.split()[0] }}!</h5>
+          </div>
+          <small style="color:rgba(255,255,255,.55)">Você está logado. Agende sua consulta abaixo.</small>
+        </div>
+
+        <div class="cliente-box">
+          <h4><i class="bi bi-calendar-plus"></i> Agendar Nova Consulta</h4>
+          <form method="POST" action="{{ url_for('cliente_agendar') }}">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label-dark">Dentista</label>
+                <select name="dentista_id" class="form-select form-control-dark" required>
+                  <option value="">Selecione…</option>
+                  {% for d in dentistas %}
+                  <option value="{{ d.id }}">{{ d.nome }}{% if d.especialidade %} — {{ d.especialidade }}{% endif %}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label-dark">Data e Hora</label>
+                <input type="datetime-local" name="data_hora" class="form-control form-control-dark" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label-dark">Tipo de Procedimento</label>
+                <select name="tipo_procedimento" class="form-select form-control-dark">
+                  <option value="">Selecione o procedimento…</option>
+                  <option>Consulta / Avaliação</option>
+                  <option>Limpeza / Profilaxia</option>
+                  <option>Clareamento</option>
+                  <option>Ortodontia — Manutenção</option>
+                  <option>Implante</option>
+                  <option>Extração</option>
+                  <option>Restauração</option>
+                  <option>Emergência</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label-dark">Observações (opcional)</label>
+                <textarea name="observacoes" class="form-control form-control-dark" rows="2"
+                          placeholder="Informe dores, alergias ou observações importantes…"></textarea>
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn-ouro">
+                  <i class="bi bi-calendar-check me-2"></i> Confirmar Agendamento
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Formulário único inteligente: login OU cadastro automático -->
+    <div class="row justify-content-center">
+      <div class="col-lg-5 col-md-7">
+        <div class="cliente-box">
+          <h4><i class="bi bi-person-circle"></i> Entre ou cadastre-se</h4>
+          <p style="color:rgba(255,255,255,.5); font-size:.82rem; margin-top:-10px; margin-bottom:20px;">
+            Informe CPF e data de nascimento. Se já tiver cadastro, entrará automaticamente.
+            Se for novo, preencha seu nome também.
+          </p>
+          <form method="POST" action="{{ url_for('cliente_acesso') }}" id="formAcesso">
+            <div class="mb-3">
+              <label class="form-label-dark">CPF *</label>
+              <input type="text" name="cpf" id="campoCpf" class="form-control form-control-dark"
+                     placeholder="000.000.000-00" required maxlength="14" autocomplete="off">
+            </div>
+            <div class="mb-3">
+              <label class="form-label-dark">Data de Nascimento *</label>
+              <input type="date" name="data_nascimento" class="form-control form-control-dark" required>
+            </div>
+
+            <!-- Campos extras — só visíveis se não tiver cadastro -->
+            <div id="camposNovo" style="display:none">
+              <div class="divider-or mb-3">Primeiro acesso? Complete seus dados</div>
+              <div class="mb-3">
+                <label class="form-label-dark">Nome completo *</label>
+                <input type="text" name="nome" class="form-control form-control-dark"
+                       placeholder="Seu nome completo" id="campoNome">
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label-dark">Telefone</label>
+                  <input type="text" name="telefone" class="form-control form-control-dark"
+                         placeholder="(00) 00000-0000">
+                </div>
+                <div class="col-6">
+                  <label class="form-label-dark">E-mail</label>
+                  <input type="email" name="email" class="form-control form-control-dark"
+                         placeholder="seu@email.com">
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-ouro" id="btnAcesso">
+              <i class="bi bi-box-arrow-in-right me-2"></i> Entrar
+            </button>
+
+            <p class="text-center mt-3" style="font-size:.78rem; color:rgba(255,255,255,.35)">
+              <a href="#" onclick="mostrarCamposNovo()" style="color:rgba(255,255,255,.4)">
+                Primeiro acesso? Clique aqui
+              </a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     FOOTER
+══════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <p class="mb-1">
+      <strong style="color:rgba(255,255,255,.6)">Bela Odontologia</strong> ·
+      Rua da Saúde, 123 · (XX) XXXX-XXXX
+    </p>
+    <p>
+      <a href="{{ url_for('admin_login') }}">
+        <i class="bi bi-shield-lock me-1"></i>Área Administrativa
+      </a>
+    </p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+    });
+});
+
+// Auto-dismiss flashes
+document.querySelectorAll('.flash-container .alert').forEach(el => {
+    setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.remove(), 500); }, 4000);
+});
+
+// Formulário inteligente: exibe campos de cadastro
+function mostrarCamposNovo(e) {
+    if (e) e.preventDefault();
+    const div = document.getElementById('camposNovo');
+    const btn = document.getElementById('btnAcesso');
+    const nome = document.getElementById('campoNome');
+    div.style.display = 'block';
+    nome.required = true;
+    btn.innerHTML = '<i class="bi bi-person-check me-2"></i> Cadastrar e Agendar';
+}
+
+// Se CPF digitado não for encontrado o servidor retorna flash "warning" —
+// nesse caso, mostra os campos de cadastro automaticamente
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+    {% if cat == 'warning' %}window.addEventListener('DOMContentLoaded', mostrarCamposNovo);{% endif %}
+  {% endfor %}
+{% endwith %}
+</script>
+</body>
+</html>

@@ -53,7 +53,17 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'usuario_id' not in session:
-            return redirect(url_for('login'))
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def cliente_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'cliente_id' not in session:
+            flash('Faça login para continuar.', 'warning')
+            return redirect(url_for('portal') + '#agendar')
         return f(*args, **kwargs)
     return decorated
 
@@ -100,8 +110,105 @@ def close_db(_e=None):
 # Auth
 # ---------------------------------------------------------------------------
 
-@app.route('/', methods=['GET', 'POST'])
-def login():
+# ---------------------------------------------------------------------------
+# Portal público (página inicial)
+# ---------------------------------------------------------------------------
+
+@app.route('/')
+def portal():
+    dentistas = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=1 ORDER BY nome")
+    cliente = None
+    if 'cliente_id' in session:
+        cliente = q1("SELECT * FROM pacientes WHERE id=%s", (session['cliente_id'],))
+    return render_template('portal.html', dentistas=dentistas, cliente=cliente)
+
+
+@app.route('/cliente/acesso', methods=['POST'])
+def cliente_acesso():
+    """Formulário único: faz login se CPF existe, cadastra se não existe."""
+    cpf_raw = request.form.get('cpf', '').strip()
+    cpf     = cpf_raw.replace('.', '').replace('-', '')
+    nasc    = request.form.get('data_nascimento', '').strip()
+    nome    = request.form.get('nome', '').strip()
+    tel     = request.form.get('telefone', '').strip()
+    email   = request.form.get('email', '').strip()
+
+    if not cpf or not nasc:
+        flash('CPF e data de nascimento são obrigatórios.', 'danger')
+        return redirect(url_for('portal') + '#agendar')
+
+    pac = q1("SELECT * FROM pacientes WHERE REPLACE(REPLACE(cpf,'.',''),'-','')=%s", (cpf,))
+
+    if pac:
+        # Paciente já cadastrado — verifica data de nascimento
+        nasc_db = str(pac['data_nascimento']) if pac['data_nascimento'] else ''
+        if nasc_db != nasc:
+            flash('Data de nascimento incorreta. Tente novamente.', 'danger')
+            return redirect(url_for('portal') + '#agendar')
+        session['cliente_id']   = pac['id']
+        session['cliente_nome'] = pac['nome']
+        session['cliente_cpf']  = pac['cpf']
+        return redirect(url_for('cliente_agendar'))
+    else:
+        # Novo paciente — precisa do nome
+        if not nome:
+            flash('Cadastro não encontrado. Preencha seu nome para se cadastrar.', 'warning')
+            return redirect(url_for('portal') + '#agendar')
+        pid = exe("INSERT INTO pacientes (nome, cpf, data_nascimento, telefone, email) VALUES (%s,%s,%s,%s,%s)",
+                  (nome, cpf_raw, nasc, tel, email))
+        session['cliente_id']   = pid
+        session['cliente_nome'] = nome
+        session['cliente_cpf']  = cpf_raw
+        flash(f'Bem-vindo(a), {nome}! Cadastro realizado com sucesso.', 'success')
+        return redirect(url_for('cliente_agendar'))
+
+
+@app.route('/cliente/entrar', methods=['POST'])
+def cliente_login():
+    return redirect(url_for('cliente_acesso'), 307)
+
+
+@app.route('/cliente/cadastrar', methods=['POST'])
+def cliente_cadastrar():
+    return redirect(url_for('cliente_acesso'), 307)
+
+
+@app.route('/cliente/agendar', methods=['GET', 'POST'])
+@cliente_required
+def cliente_agendar():
+    dentistas = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=1 ORDER BY nome")
+    if request.method == 'POST':
+        did   = request.form.get('dentista_id')
+        dh    = request.form.get('data_hora')
+        proc  = request.form.get('tipo_procedimento', '').strip()
+        obs   = request.form.get('observacoes', '').strip()
+        exe("""INSERT INTO consultas (paciente_id, dentista_id, data_hora, tipo_procedimento, observacoes, status)
+               VALUES (%s,%s,%s,%s,%s,'agendada')""",
+            (session['cliente_id'], did, dh, proc, obs))
+        flash('Consulta agendada com sucesso! Aguarde a confirmação da clínica.', 'success')
+        return redirect(url_for('cliente_agendar'))
+    consultas = q("""SELECT c.data_hora, c.tipo_procedimento, c.status, d.nome AS dentista
+                     FROM consultas c JOIN dentistas d ON d.id=c.dentista_id
+                     WHERE c.paciente_id=%s ORDER BY c.data_hora DESC LIMIT 10""",
+                  (session['cliente_id'],))
+    return render_template('cliente/agendamento.html',
+                           dentistas=dentistas, consultas=consultas)
+
+
+@app.route('/cliente/sair')
+def cliente_logout():
+    session.pop('cliente_id', None)
+    session.pop('cliente_nome', None)
+    session.pop('cliente_cpf', None)
+    return redirect(url_for('portal'))
+
+
+# ---------------------------------------------------------------------------
+# Auth — Administrador
+# ---------------------------------------------------------------------------
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
     if 'usuario_id' in session:
         return redirect(url_for('dashboard'))
     error = None
@@ -117,10 +224,17 @@ def login():
     return render_template('login.html', error=error)
 
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    return redirect(url_for('admin_login'))
+
+
 @app.route('/logout')
 def logout():
-    session.clear()
-    return redirect(url_for('login'))
+    session.pop('usuario_id', None)
+    session.pop('usuario_nome', None)
+    session.pop('usuario_perfil', None)
+    return redirect(url_for('portal'))
 
 
 # ---------------------------------------------------------------------------
