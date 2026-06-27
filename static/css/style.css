@@ -293,64 +293,78 @@ body {
 .cep-status { vertical-align: middle; }
 
 /* ═══════════════════════════════════════════════
-   RESPONSIVO — TABLET (≤ 1024px)
-   Mini sidebar com só ícones
+   TABLET  (769px – 1024px) — sidebar mini ícones
 ═══════════════════════════════════════════════ */
 @media (max-width: 1024px) and (min-width: 769px) {
     #sidebar { width: var(--sidebar-mini); }
     #sidebar .sidebar-label,
     #sidebar .sidebar-label-block { display: none !important; }
     #sidebar .brand .logo-img { max-width: 44px; border-radius: 8px; }
-    #sidebar .nav-link { padding: 12px; justify-content: center; gap: 0; border-radius: 10px; margin: 3px 6px; }
+    #sidebar .nav-link {
+        padding: 12px; justify-content: center; gap: 0;
+        border-radius: 10px; margin: 3px 6px;
+    }
     #sidebar .nav-link i { width: auto; font-size: 1.2rem; }
     #sidebar .nav-section { padding: 6px 0; text-align: center; font-size: .45rem; }
     #sidebar .sidebar-footer { padding: 8px 4px; }
     #sidebar .user-avatar-sm { margin: 0 auto 4px; }
     .main-content { margin-left: var(--sidebar-mini); }
+
+    /* Stat cards: 2x2 */
+    .stat-card .icon-box { width: 40px; height: 40px; font-size: 1.1rem; }
+    .stat-card .fs-3 { font-size: 1.5rem !important; }
+
+    /* Topbar compacta */
+    .topbar { padding: 0 14px; }
 }
 
 /* ═══════════════════════════════════════════════
-   RESPONSIVO — MOBILE (≤ 768px)
-   Sidebar como gaveta deslizante
+   MOBILE  (≤ 768px) — sidebar como gaveta
 ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
-    /* Sidebar fora da tela por padrão */
-    #sidebar {
-        width: var(--sidebar-w);
-        transform: translateX(-100%);
-    }
+    /* Sidebar gaveta */
+    #sidebar { width: var(--sidebar-w); transform: translateX(-100%); }
     #sidebar.open { transform: translateX(0); }
     #sidebar .sidebar-label,
     #sidebar .sidebar-label-block { display: inline !important; }
     #sidebar .brand .logo-img { max-width: 180px; }
-    #sidebar .nav-link { padding: 11px 20px; justify-content: flex-start; gap: 12px; }
+    #sidebar .nav-link { padding: 13px 20px; justify-content: flex-start; gap: 12px; }
 
-    .main-content { margin-left: 0; }
+    .main-content { margin-left: 0; padding-bottom: 72px; }
 
-    /* Topbar mais compacta */
+    /* Topbar */
     .topbar { padding: 0 12px; }
-    .topbar .page-title { font-size: .85rem; }
+    .topbar .page-title { font-size: .88rem; }
+    .topbar .user-info span:not(.user-avatar) { display: none; }
 
-    /* Tabelas com scroll horizontal */
+    /* Stat cards touch-friendly */
+    .stat-card { border-radius: 12px; }
+    .stat-card .icon-box { width: 40px; height: 40px; font-size: 1.1rem; }
+    .stat-card .fs-3 { font-size: 1.4rem !important; }
+
+    /* Tabelas */
     .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .table td, .table thead th { white-space: nowrap; font-size: .8rem; padding: 8px 10px; }
+    .table td, .table thead th { white-space: nowrap; font-size: .8rem; padding: 10px 10px; }
 
-    /* Cards de stat em 2 colunas */
-    .stat-card { min-width: 0; }
+    /* Botões de ação */
+    .btn-group-sm .btn { font-size: .75rem; padding: 6px 10px; min-height: 36px; }
 
-    /* Formulários: todos campos full width */
+    /* Formulários em coluna única */
     .col-md-3, .col-md-4, .col-md-6, .col-md-8 { width: 100%; }
 
-    /* Botões de ação empilhados */
-    .btn-group-sm .btn { font-size: .72rem; padding: 4px 8px; }
+    /* Inputs maiores para toque */
+    .form-control, .form-select { min-height: 48px; font-size: 1rem; }
 
-    /* Login menor no mobile */
-    .login-card { padding: 28px 20px; }
+    /* Login */
+    .login-card { padding: 28px 20px; margin: 12px; }
     .login-logo { width: 160px; }
+
+    /* Modais full-width */
+    .modal-dialog { margin: 8px; max-width: calc(100% - 16px); }
 }
 
 /* ═══════════════════════════════════════════════
-   BARRA DE NAVEGAÇÃO INFERIOR (mobile)
+   BARRA INFERIOR MOBILE (admin)
 ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .mobile-nav {
@@ -360,7 +374,7 @@ body {
         background: var(--sidebar-bg);
         z-index: 1001;
         border-top: 1px solid rgba(255,255,255,.1);
-        padding: 6px 0 8px;
+        padding: 6px 0 env(safe-area-inset-bottom, 8px);
     }
     .mobile-nav a {
         flex: 1;
@@ -371,13 +385,24 @@ body {
         text-decoration: none;
         font-size: .58rem;
         gap: 2px;
-        padding: 2px 0;
+        padding: 4px 0;
+        min-height: 44px;
+        justify-content: center;
     }
-    .mobile-nav a i { font-size: 1.3rem; }
+    .mobile-nav a i { font-size: 1.35rem; }
     .mobile-nav a.active, .mobile-nav a:hover { color: #fff; }
-    .main-content { padding-bottom: 66px; }
 }
 @media (min-width: 769px) { .mobile-nav { display: none !important; } }
+
+/* ═══════════════════════════════════════════════
+   MOBILE MUITO PEQUENO  (< 380px)
+═══════════════════════════════════════════════ */
+@media (max-width: 379px) {
+    .topbar .page-title { font-size: .78rem; }
+    .stat-card .fs-3 { font-size: 1.2rem !important; }
+    .mobile-nav a { font-size: .52rem; }
+    .mobile-nav a i { font-size: 1.15rem; }
+}
 
 /* ───────────────────────────────────────────────
    BANNER DO DASHBOARD

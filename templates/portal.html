@@ -2,47 +2,142 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<meta name="theme-color" content="#1e0a2e">
 <title>Bela Odontologia — Cuidando do Seu Sorriso</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
+/* ═══════════════════════════════════════════════
+   VARIÁVEIS E BASE
+═══════════════════════════════════════════════ */
 :root {
     --roxo: #6a1f9e;
     --roxo-dark: #1e0a2e;
     --ouro: #b8860b;
     --ouro-light: #d4a017;
+    --mob-header-h: 56px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hidden; }
 
-/* ── NAVEGAÇÃO REAL SOBRE A IMAGEM ── */
+/* ═══════════════════════════════════════════════
+   HEADER MOBILE/TABLET (oculto no desktop)
+═══════════════════════════════════════════════ */
+.mob-header {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--mob-header-h);
+    background: rgba(14,2,30,.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    z-index: 1100;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+.mob-header .brand-name {
+    color: var(--ouro-light);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: .3px;
+}
+.mob-header .hamburger {
+    background: none; border: none;
+    color: #fff; font-size: 1.5rem;
+    padding: 4px 8px; cursor: pointer;
+    line-height: 1;
+}
+
+/* Drawer de navegação mobile */
+.mob-drawer {
+    display: none;
+    position: fixed;
+    top: var(--mob-header-h); left: 0; right: 0;
+    background: rgba(14,2,30,.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: 1090;
+    padding: 16px 0 24px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    transform: translateY(-110%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.mob-drawer.open { transform: translateY(0); }
+.mob-drawer a {
+    display: block;
+    color: rgba(255,255,255,.75);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 14px 24px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    transition: color .15s, background .15s;
+}
+.mob-drawer a:last-child { border-bottom: none; }
+.mob-drawer a:hover, .mob-drawer a.active { color: var(--ouro-light); background: rgba(255,255,255,.04); }
+.mob-drawer a.mob-agendar {
+    color: var(--ouro-light);
+    font-size: 1.05rem;
+    padding-left: 24px;
+}
+
+/* ═══════════════════════════════════════════════
+   NAV OVERLAY (desktop/tablet — sobre a imagem)
+═══════════════════════════════════════════════ */
 .nav-img-btn {
     color: #fff;
     text-decoration: none;
-    font-size: clamp(.8rem, 1.2vw, 1rem);
+    font-size: clamp(.78rem, 1.1vw, .95rem);
     font-weight: 600;
     letter-spacing: .3px;
-    padding: 5px 2px;
+    padding: 6px 4px;
     border-bottom: 2px solid transparent;
     transition: color .2s, border-color .2s;
     white-space: nowrap;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
 }
-.nav-img-btn:hover { color: #d4a017; border-bottom-color: #d4a017; }
-.nav-img-btn.nav-active { color: #d4a017; border-bottom-color: #d4a017; }
+.nav-img-btn:hover  { color: var(--ouro-light); border-bottom-color: var(--ouro-light); }
+.nav-img-btn.nav-active { color: var(--ouro-light); border-bottom-color: var(--ouro-light); }
 .nav-img-btn.nav-agendar {
     background: rgba(184,134,11,.25);
     border-bottom: none;
     outline: 1.5px solid rgba(212,160,23,.7);
     border-radius: 20px;
-    padding: 5px 16px;
+    padding: 6px 16px;
     color: #f0c040;
 }
 .nav-img-btn.nav-agendar:hover {
     background: rgba(184,134,11,.45);
-    outline-color: #d4a017;
+    outline-color: var(--ouro-light);
     color: #fff;
 }
+
+/* Botão flutuante (canto inferior da imagem) */
+.btn-flutuante {
+    background: rgba(30,10,46,.8);
+    color: rgba(255,255,255,.85);
+    font-size: .78rem;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.2);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: all .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+}
+.btn-flutuante:hover { color: #fff; border-color: rgba(255,255,255,.5); }
+
+/* Botão admin destaque */
 .btn-admin-destaque {
     display: inline-flex;
     align-items: center;
@@ -51,46 +146,27 @@ body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hid
     color: rgba(255,255,255,.65);
     font-size: .85rem;
     font-weight: 600;
-    padding: 9px 22px;
+    padding: 10px 24px;
     border-radius: 30px;
     text-decoration: none;
     transition: all .2s;
+    min-height: 44px;
 }
 .btn-admin-destaque:hover {
     background: rgba(255,255,255,.12);
     border-color: rgba(255,255,255,.45);
     color: #fff;
 }
-.btn-flutuante {
-    background: rgba(30,10,46,.75);
-    color: rgba(255,255,255,.8);
-    font-size: .75rem;
-    font-weight: 600;
-    text-decoration: none;
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,.2);
-    backdrop-filter: blur(4px);
-    transition: all .2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-.btn-flutuante:hover { color: #fff; border-color: rgba(255,255,255,.5); }
 
-
-/* ── SERVIÇOS ── */
+/* ═══════════════════════════════════════════════
+   SERVIÇOS
+═══════════════════════════════════════════════ */
 #servicos {
     background: var(--roxo-dark);
     padding: 70px 20px;
     text-align: center;
 }
-#servicos h2 {
-    color: var(--ouro-light);
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
+#servicos h2 { color: var(--ouro-light); font-size: clamp(1.4rem,3vw,1.8rem); font-weight: 700; margin-bottom: 10px; }
 #servicos p.lead { color: rgba(255,255,255,.65); margin-bottom: 48px; font-size: .95rem; }
 .servico-card {
     background: rgba(255,255,255,.05);
@@ -107,13 +183,15 @@ body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hid
 .servico-card h5 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
 .servico-card p { font-size: .82rem; color: rgba(255,255,255,.6); margin: 0; }
 
-/* ── SOBRE NÓS ── */
+/* ═══════════════════════════════════════════════
+   SOBRE NÓS
+═══════════════════════════════════════════════ */
 #sobre {
     background: linear-gradient(135deg, #2d0a47, #1e0a2e);
     padding: 70px 20px;
     color: #fff;
 }
-#sobre h2 { color: var(--ouro-light); font-size: 1.8rem; font-weight: 700; margin-bottom: 16px; }
+#sobre h2 { color: var(--ouro-light); font-size: clamp(1.4rem,3vw,1.8rem); font-weight: 700; margin-bottom: 16px; }
 #sobre p { color: rgba(255,255,255,.75); font-size: .95rem; line-height: 1.8; }
 #sobre .sobre-img {
     border-radius: 20px;
@@ -123,23 +201,18 @@ body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hid
     box-shadow: 0 12px 48px rgba(0,0,0,.4);
 }
 
-/* ── ÁREA CLIENTE / LOGIN / CADASTRO ── */
-#agendar {
-    background: #0d0616;
-    padding: 70px 20px;
-}
+/* ═══════════════════════════════════════════════
+   ÁREA DO CLIENTE
+═══════════════════════════════════════════════ */
+#agendar { background: #0d0616; padding: 70px 20px; }
 #agendar h2 {
     color: var(--ouro-light);
-    font-size: 1.8rem;
+    font-size: clamp(1.4rem,3vw,1.8rem);
     font-weight: 700;
     text-align: center;
     margin-bottom: 8px;
 }
-#agendar > .container > p {
-    color: rgba(255,255,255,.6);
-    text-align: center;
-    margin-bottom: 48px;
-}
+#agendar > .container > p { color: rgba(255,255,255,.6); text-align: center; margin-bottom: 48px; }
 .cliente-box {
     background: rgba(255,255,255,.04);
     border: 1px solid rgba(255,255,255,.08);
@@ -148,62 +221,40 @@ body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hid
     color: #fff;
 }
 .cliente-box h4 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 20px;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;
+    color: #fff; display: flex; align-items: center; gap: 8px;
 }
 .cliente-box h4 i { color: var(--ouro-light); font-size: 1.3rem; }
 .form-control-dark {
     background: rgba(255,255,255,.07);
     border: 1px solid rgba(255,255,255,.15);
-    color: #fff;
-    border-radius: 10px;
+    color: #fff; border-radius: 10px;
+    min-height: 48px; font-size: 1rem;
 }
 .form-control-dark::placeholder { color: rgba(255,255,255,.35); }
 .form-control-dark:focus {
     background: rgba(255,255,255,.1);
-    border-color: var(--ouro);
-    color: #fff;
+    border-color: var(--ouro); color: #fff;
     box-shadow: 0 0 0 .2rem rgba(184,134,11,.25);
 }
 .form-label-dark { color: rgba(255,255,255,.75); font-size: .85rem; font-weight: 600; }
 .btn-ouro {
     background: linear-gradient(135deg, var(--ouro), var(--ouro-light));
-    color: #1e0a2e;
-    font-weight: 700;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 24px;
-    width: 100%;
-    font-size: .95rem;
-    cursor: pointer;
-    transition: filter .2s;
+    color: #1e0a2e; font-weight: 700; border: none;
+    border-radius: 10px; padding: 14px 24px; width: 100%;
+    font-size: 1rem; cursor: pointer; transition: filter .2s;
+    min-height: 52px;
 }
 .btn-ouro:hover { filter: brightness(1.1); }
 .divider-or {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: rgba(255,255,255,.35);
-    font-size: .8rem;
-    margin: 24px 0;
+    display: flex; align-items: center; gap: 10px;
+    color: rgba(255,255,255,.35); font-size: .8rem; margin: 24px 0;
 }
-.divider-or::before, .divider-or::after {
-    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.12);
-}
-
-/* Cliente logado */
+.divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.12); }
 .cliente-logado-box {
     background: linear-gradient(135deg, rgba(139,47,201,.2), rgba(184,134,11,.1));
     border: 1px solid rgba(184,134,11,.3);
-    border-radius: 20px;
-    padding: 24px;
-    color: #fff;
-    margin-bottom: 24px;
+    border-radius: 20px; padding: 24px; color: #fff; margin-bottom: 24px;
 }
 .cliente-logado-box h5 { color: var(--ouro-light); margin-bottom: 4px; }
 .badge-status-agendada   { background: #1565c0; }
@@ -211,7 +262,29 @@ body { font-family: 'Segoe UI', sans-serif; background: #0d0616; overflow-x: hid
 .badge-status-cancelada  { background: #c62828; }
 .badge-status-confirmada { background: #e65100; }
 
-/* ── FOOTER ── */
+/* CTA fixo no rodapé mobile */
+.mob-cta-agendar {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 1050;
+    padding: 10px 16px 14px;
+    background: linear-gradient(to top, rgba(8,0,16,.97) 70%, transparent);
+}
+.mob-cta-agendar a {
+    display: block;
+    background: linear-gradient(135deg, var(--ouro), var(--ouro-light));
+    color: #1e0a2e; font-weight: 700; font-size: 1rem;
+    text-align: center; text-decoration: none;
+    padding: 15px; border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(184,134,11,.4);
+    transition: filter .2s;
+}
+.mob-cta-agendar a:hover { filter: brightness(1.1); color: #1e0a2e; }
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════ */
 footer {
     background: #080010;
     padding: 30px 20px;
@@ -223,22 +296,104 @@ footer {
 footer a { color: rgba(255,255,255,.5); text-decoration: none; }
 footer a:hover { color: #fff; }
 
-/* ── FLASHES ── */
+/* ═══════════════════════════════════════════════
+   FLASHES
+═══════════════════════════════════════════════ */
 .flash-container {
     position: fixed;
     top: 16px; right: 16px;
     z-index: 9999;
-    width: 320px;
+    width: min(320px, calc(100vw - 32px));
 }
 
-/* ── MOBILE ── */
-@media (max-width: 768px) {
-    .cliente-box { padding: 24px 16px; }
-    #servicos, #sobre, #agendar { padding: 48px 12px; }
+/* ═══════════════════════════════════════════════
+   TABLET  (768px – 1023px)
+═══════════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .mob-header { display: flex; }
+    #home { padding-top: var(--mob-header-h); }
+    /* Nav overlay fica visível mas com texto maior */
+    .nav-img-btn { font-size: .9rem; }
+    .nav-img-btn.nav-agendar { padding: 7px 18px; }
+    /* Seções */
+    #servicos, #sobre, #agendar { padding: 56px 20px; }
+    .servico-card { padding: 24px 16px; }
+    /* Sobre: imagem em cima no tablet portrait */
+    #sobre .sobre-img { max-height: 280px; }
+    /* Formulário mais largo */
+    .cliente-box { padding: 32px 28px; }
+}
+
+/* ═══════════════════════════════════════════════
+   MOBILE  (< 768px)
+═══════════════════════════════════════════════ */
+@media (max-width: 767px) {
+    /* Header fixo mobile */
+    .mob-header { display: flex; }
+    #home { padding-top: var(--mob-header-h); }
+
+    /* Esconde nav overlay — substituída pelo drawer */
+    #home nav { display: none !important; }
+    /* Botão flutuante menor e mais para cima */
+    #home .btn-flutuante { font-size: .7rem; padding: 5px 10px; bottom: 4% !important; }
+
+    /* Seções com menos padding */
+    #servicos, #sobre, #agendar { padding: 44px 12px; }
+
+    /* Cards de serviço: 1 coluna em telas < 400px, 2 colunas acima */
+    .servico-card { padding: 20px 14px; }
+    .servico-card .icon { font-size: 2rem; }
+
+    /* Sobre: imagem oculta em telas muito pequenas (< 400px) */
+    #sobre .sobre-img { max-height: 220px; border-radius: 14px; }
+
+    /* Formulário */
+    .cliente-box { padding: 24px 16px; border-radius: 16px; }
+    .form-control-dark { min-height: 52px; font-size: 1rem; }
+
+    /* Espaço para o CTA fixo */
+    footer { padding-bottom: 80px; }
+
+    /* Exibe CTA fixo */
+    .mob-cta-agendar { display: block; }
+
+    /* Flash ocupa largura total */
+    .flash-container { top: calc(var(--mob-header-h) + 8px); left: 8px; right: 8px; width: auto; }
+}
+
+/* ═══════════════════════════════════════════════
+   MOBILE PEQUENO  (< 400px)
+═══════════════════════════════════════════════ */
+@media (max-width: 399px) {
+    #sobre .col-lg-6:first-child { display: none; }
+    .mob-header .brand-name { font-size: .92rem; }
+    #agendar > .container > p { font-size: .85rem; }
 }
 </style>
 </head>
 <body>
+
+<!-- Header fixo Mobile/Tablet -->
+<header class="mob-header">
+  <span class="brand-name"><i class="bi bi-tooth me-1"></i>Bela Odontologia</span>
+  <button class="hamburger" id="btnMenu" aria-label="Menu">
+    <i class="bi bi-list" id="iconMenu"></i>
+  </button>
+</header>
+
+<!-- Drawer de navegação Mobile -->
+<div class="mob-drawer" id="mobDrawer">
+  <a href="#home"     class="active" onclick="fecharMenu()"><i class="bi bi-house me-2"></i>Home</a>
+  <a href="#servicos" onclick="fecharMenu()"><i class="bi bi-stars me-2"></i>Serviços</a>
+  <a href="#sobre"    onclick="fecharMenu()"><i class="bi bi-info-circle me-2"></i>Sobre Nós</a>
+  <a href="#agendar"  class="mob-agendar" onclick="fecharMenu()"><i class="bi bi-calendar-check me-2"></i>Agendar Consulta</a>
+  <a href="{{ url_for('admin_login') }}" style="color:rgba(255,255,255,.35); font-size:.85rem"><i class="bi bi-shield-lock me-2"></i>Área Administrativa</a>
+</div>
+
+<!-- CTA fixo no rodapé (mobile) -->
+<div class="mob-cta-agendar">
+  <a href="#agendar"><i class="bi bi-calendar-check me-2"></i>Agendar Consulta</a>
+</div>
 
 <!-- Flash messages -->
 <div class="flash-container">
@@ -521,11 +676,34 @@ footer a:hover { color: #fff; }
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Menu mobile
+const drawer = document.getElementById('mobDrawer');
+const iconMenu = document.getElementById('iconMenu');
+document.getElementById('btnMenu').addEventListener('click', () => {
+    const open = drawer.classList.toggle('open');
+    iconMenu.className = open ? 'bi bi-x-lg' : 'bi bi-list';
+});
+function fecharMenu() {
+    drawer.classList.remove('open');
+    iconMenu.className = 'bi bi-list';
+}
+
+// Oculta CTA de agendar quando usuário já está na seção #agendar
+const secAgendar = document.getElementById('agendar');
+const ctaMob     = document.querySelector('.mob-cta-agendar');
+if (secAgendar && ctaMob) {
+    const obs = new IntersectionObserver(([e]) => {
+        ctaMob.style.opacity = e.isIntersecting ? '0' : '1';
+        ctaMob.style.pointerEvents = e.isIntersecting ? 'none' : 'auto';
+    }, { threshold: .1 });
+    obs.observe(secAgendar);
+}
+
 // Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
         const target = document.querySelector(a.getAttribute('href'));
-        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+        if (target) { e.preventDefault(); fecharMenu(); target.scrollIntoView({ behavior: 'smooth' }); }
     });
 });
 
