@@ -288,11 +288,15 @@ def dashboard():
         "SELECT produto, quantidade, quantidade_minima, unidade "
         "FROM estoque WHERE quantidade <= quantidade_minima ORDER BY produto"
     )
+    estoque_itens = q("SELECT * FROM estoque ORDER BY categoria, produto")
+    estoque_cats  = q("SELECT DISTINCT categoria FROM estoque ORDER BY categoria")
     return render_template('dashboard.html',
                            total_pacientes=total_pacientes,
                            total_hoje=total_hoje,
                            total_mes=total_mes,
                            estoque_alertas=estoque_alertas,
+                           estoque_itens=estoque_itens,
+                           estoque_cats=estoque_cats,
                            faturamento_mes=faturamento_mes,
                            proximas=proximas)
 

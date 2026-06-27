@@ -77,43 +77,86 @@
       </div>
     </div>
 
-    <!-- Alerta de estoque baixo -->
-    {% if estoque_alertas %}
-    <div class="card table-card">
+    <!-- ═══ ESTOQUE ═══ -->
+    <div class="card table-card mb-4">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Estoque Baixo</span>
-        <a href="{{ url_for('estoque_lista') }}" class="btn btn-sm btn-outline-warning">Gerenciar</a>
+        <span>
+          <i class="bi bi-box-seam me-1 text-primary"></i> Estoque
+          {% if estoque_alertas %}
+            <span class="badge bg-danger ms-1">{{ estoque_alertas|length }} alerta(s)</span>
+          {% endif %}
+        </span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoEstoque">
+          <i class="bi bi-plus-circle me-1"></i> Novo Produto
+        </button>
       </div>
       <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th class="text-center">Atual</th>
-              <th class="text-center">Mínimo</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for a in estoque_alertas %}
-            <tr class="{{ 'table-danger' if a.quantidade == 0 else 'table-warning' }}">
-              <td class="fw-semibold">{{ a.produto }}</td>
-              <td class="text-center fw-bold text-danger">{{ a.quantidade }} {{ a.unidade }}</td>
-              <td class="text-center text-muted">{{ a.quantidade_minima }}</td>
-              <td>
-                {% if a.quantidade == 0 %}
-                  <span class="badge bg-danger">Zerado</span>
-                {% else %}
-                  <span class="badge bg-warning text-dark">Baixo</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        {% if estoque_itens %}
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th class="text-center">Qtd</th>
+                <th class="text-center">Mín.</th>
+                <th>Status</th>
+                <th class="text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in estoque_itens %}
+              <tr class="{{ 'table-danger' if item.quantidade == 0 else ('table-warning' if item.quantidade <= item.quantidade_minima else '') }}">
+                <td class="fw-semibold">{{ item.produto }}</td>
+                <td><span class="badge bg-secondary">{{ item.categoria }}</span></td>
+                <td class="text-center fw-bold {{ 'text-danger' if item.quantidade <= item.quantidade_minima else 'text-success' }}">
+                  {{ item.quantidade }} <small class="fw-normal text-muted">{{ item.unidade }}</small>
+                </td>
+                <td class="text-center text-muted">{{ item.quantidade_minima }}</td>
+                <td>
+                  {% if item.quantidade == 0 %}
+                    <span class="badge bg-danger">Zerado</span>
+                  {% elif item.quantidade <= item.quantidade_minima %}
+                    <span class="badge bg-warning text-dark">Baixo</span>
+                  {% else %}
+                    <span class="badge bg-success">Normal</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-success" title="Entrada"
+                            onclick="dashMover({{ item.id }},'{{ item.produto|e }}','entrada')">
+                      <i class="bi bi-plus-lg"></i>
+                    </button>
+                    <button class="btn btn-outline-warning" title="Saída"
+                            onclick="dashMover({{ item.id }},'{{ item.produto|e }}','saida')">
+                      <i class="bi bi-dash-lg"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" title="Editar"
+                            onclick='dashEditar({{ item|tojson }})'>
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <form method="POST" action="{{ url_for('estoque_excluir', eid=item.id) }}"
+                          onsubmit="return confirm('Remover {{ item.produto|e }}?')" style="display:inline">
+                      <button type="submit" class="btn btn-outline-danger" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-box fs-2 d-block mb-2 opacity-25"></i>
+          Nenhum produto. Clique em <strong>Novo Produto</strong> para começar.
+        </div>
+        {% endif %}
       </div>
     </div>
-    {% endif %}
 
     <!-- Próximas consultas -->
     <div class="card table-card">
@@ -181,4 +224,154 @@
   </div>
 
 </div><!-- /row -->
+
+<!-- ═══ MODAL: Novo Produto ═══ -->
+<div class="modal fade" id="modalNovoEstoque" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-1 text-primary"></i> Novo Produto no Estoque</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('estoque_novo') }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Produto *</label>
+              <input type="text" name="produto" class="form-control" required placeholder="Nome do produto">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Categoria</label>
+              <input type="text" name="categoria" class="form-control" list="dashCats" placeholder="Ex: EPI, Material...">
+              <datalist id="dashCats">
+                {% for c in estoque_cats %}<option value="{{ c.categoria }}">{% endfor %}
+                <option value="EPI"><option value="Material Dental">
+                <option value="Medicamento"><option value="Limpeza">
+              </datalist>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Unidade</label>
+              <select name="unidade" class="form-select">
+                <option value="unidade">Unidade</option><option value="caixa">Caixa</option>
+                <option value="frasco">Frasco</option><option value="ampola">Ampola</option>
+                <option value="par">Par</option><option value="rolo">Rolo</option>
+                <option value="litro">Litro</option><option value="kg">Kg</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade Atual *</label>
+              <input type="number" name="quantidade" class="form-control" min="0" value="0" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade Mínima *</label>
+              <input type="number" name="quantidade_minima" class="form-control" min="1" value="1" required>
+              <div class="form-text">Alerta quando estoque atingir este valor.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i> Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Editar Produto ═══ -->
+<div class="modal fade" id="modalEditarEstoque" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil me-1"></i> Editar Produto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="dashFormEditar">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Produto *</label>
+              <input type="text" name="produto" id="dashEditProduto" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Categoria</label>
+              <input type="text" name="categoria" id="dashEditCat" class="form-control" list="dashCats">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Unidade</label>
+              <select name="unidade" id="dashEditUnidade" class="form-select">
+                <option value="unidade">Unidade</option><option value="caixa">Caixa</option>
+                <option value="frasco">Frasco</option><option value="ampola">Ampola</option>
+                <option value="par">Par</option><option value="rolo">Rolo</option>
+                <option value="litro">Litro</option><option value="kg">Kg</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade</label>
+              <input type="number" name="quantidade" id="dashEditQtd" class="form-control" min="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Quantidade Mínima</label>
+              <input type="number" name="quantidade_minima" id="dashEditQtdMin" class="form-control" min="1">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i> Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Movimentar ═══ -->
+<div class="modal fade" id="modalMoverEstoque" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" id="dashMvHeader">
+        <h5 class="modal-title" id="dashMvTitulo">Movimentar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="dashFormMover">
+        <input type="hidden" name="tipo" id="dashMvTipo">
+        <div class="modal-body">
+          <p class="text-muted small mb-2" id="dashMvNome"></p>
+          <label class="form-label fw-semibold">Quantidade *</label>
+          <input type="number" name="quantidade" id="dashMvQtd" class="form-control form-control-lg" min="1" value="1" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" id="dashMvBtn" class="btn btn-success">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashEditar(item) {
+  document.getElementById('dashFormEditar').action = '/estoque/' + item.id + '/editar';
+  document.getElementById('dashEditProduto').value  = item.produto;
+  document.getElementById('dashEditCat').value      = item.categoria;
+  document.getElementById('dashEditUnidade').value  = item.unidade;
+  document.getElementById('dashEditQtd').value      = item.quantidade;
+  document.getElementById('dashEditQtdMin').value   = item.quantidade_minima;
+  new bootstrap.Modal(document.getElementById('modalEditarEstoque')).show();
+}
+function dashMover(id, nome, tipo) {
+  var entrada = tipo === 'entrada';
+  document.getElementById('dashFormMover').action  = '/estoque/' + id + '/movimentar';
+  document.getElementById('dashMvTipo').value      = tipo;
+  document.getElementById('dashMvNome').textContent = nome;
+  document.getElementById('dashMvTitulo').textContent = entrada ? 'Entrada de Estoque' : 'Saída de Estoque';
+  document.getElementById('dashMvHeader').className = 'modal-header ' + (entrada ? 'bg-success text-white' : 'bg-warning');
+  document.getElementById('dashMvBtn').className   = 'btn ' + (entrada ? 'btn-success' : 'btn-warning');
+  document.getElementById('dashMvQtd').value = 1;
+  new bootstrap.Modal(document.getElementById('modalMoverEstoque')).show();
+}
+</script>
 {% endblock %}
