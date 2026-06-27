@@ -8,12 +8,20 @@ from dotenv import load_dotenv
 from flask import Flask, g, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from flask_wtf.csrf import CSRFProtect
 from database import get_db, init_db
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    WTF_CSRF_TIME_LIMIT=3600,
+)
+csrf = CSRFProtect(app)
 
 
 @app.template_filter('dt')
@@ -51,6 +59,18 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if 'usuario_id' not in session:
             return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'usuario_id' not in session:
+            return redirect(url_for('admin_login'))
+        if session.get('usuario_perfil') != 'admin':
+            flash('Acesso restrito a administradores.', 'danger')
+            return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated
 
@@ -386,7 +406,7 @@ def consultas_lista():
     if status_f:
         sql += " AND c.status=%s"; params.append(status_f)
     if data_f:
-        sql += " AND DATE(c.data_hora)=%s"; params.append(data_f)
+        sql += " AND c.data_hora::date=%s"; params.append(data_f)
     sql += " ORDER BY c.data_hora DESC"
     rows = q(sql, params)
     return render_template('consultas/lista.html',
@@ -633,7 +653,7 @@ def estoque_lista():
 
 
 @app.route('/estoque/novo', methods=['POST'])
-@login_required
+@admin_required
 def estoque_novo():
     exe("INSERT INTO estoque (produto, categoria, quantidade, quantidade_minima, unidade) VALUES (%s,%s,%s,%s,%s)",
         (request.form['produto'].strip(),
@@ -646,7 +666,7 @@ def estoque_novo():
 
 
 @app.route('/estoque/<int:eid>/editar', methods=['POST'])
-@login_required
+@admin_required
 def estoque_editar(eid):
     exe("UPDATE estoque SET produto=%s, categoria=%s, quantidade=%s, quantidade_minima=%s, unidade=%s WHERE id=%s",
         (request.form['produto'].strip(),
@@ -678,7 +698,7 @@ def estoque_movimentar(eid):
 
 
 @app.route('/estoque/<int:eid>/excluir', methods=['POST'])
-@login_required
+@admin_required
 def estoque_excluir(eid):
     item = q1("SELECT produto FROM estoque WHERE id=%s", (eid,))
     if item:
@@ -707,7 +727,7 @@ def dentistas_lista():
 
 
 @app.route('/dentistas/novo', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def dentistas_novo():
     if request.method == 'POST':
         f = request.form
@@ -719,7 +739,7 @@ def dentistas_novo():
 
 
 @app.route('/dentistas/<int:did>/editar', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def dentistas_editar(did):
     dentista = q1("SELECT * FROM dentistas WHERE id=%s", (did,))
     if not dentista:
@@ -735,7 +755,7 @@ def dentistas_editar(did):
 
 
 @app.route('/dentistas/<int:did>/excluir', methods=['POST'])
-@login_required
+@admin_required
 def dentistas_excluir(did):
     dentista = q1("SELECT nome FROM dentistas WHERE id=%s", (did,))
     if not dentista:
