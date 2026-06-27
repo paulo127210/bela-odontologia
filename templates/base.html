@@ -95,13 +95,20 @@
     </div>
   </div>
 
-  <!-- Flashes -->
-  <div class="px-4 pt-3">
+  <!-- Toasts de notificação -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:1100">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}
-      <div class="alert alert-{{ cat }} alert-dismissible alert-auto shadow-sm" role="alert">
-        {{ msg }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      {% set icon = 'check-circle-fill' if cat == 'success' else ('exclamation-triangle-fill' if cat == 'warning' else ('x-circle-fill' if cat == 'danger' else 'info-circle-fill')) %}
+      {% set color = 'success' if cat == 'success' else ('warning' if cat == 'warning' else ('danger' if cat == 'danger' else 'primary')) %}
+      <div class="toast align-items-center border-0 shadow-lg text-bg-{{ color }}" role="alert" aria-live="assertive" data-bs-autohide="true" data-bs-delay="4500">
+        <div class="d-flex">
+          <div class="toast-body d-flex align-items-center gap-2 fs-6 fw-semibold">
+            <i class="bi bi-{{ icon }} flex-shrink-0" style="font-size:1.2rem"></i>
+            <span>{{ msg }}</span>
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
       </div>
       {% endfor %}
     {% endwith %}
@@ -136,6 +143,7 @@
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script>
 (function(){
+  /* CSRF em todos os formulários */
   var token = document.querySelector('meta[name="csrf-token"]').content;
   document.querySelectorAll('form').forEach(function(f){
     if(!f.querySelector('[name="csrf_token"]')){
@@ -143,6 +151,12 @@
       i.type='hidden'; i.name='csrf_token'; i.value=token;
       f.appendChild(i);
     }
+  });
+
+  /* Inicializar e exibir todos os toasts */
+  document.querySelectorAll('.toast').forEach(function(el){
+    var t = new bootstrap.Toast(el);
+    t.show();
   });
 })();
 </script>

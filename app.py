@@ -454,7 +454,14 @@ def consultas_nova():
             "VALUES (%s,%s,%s,%s,%s,%s)",
             (f['paciente_id'], f['dentista_id'], f['data_hora'],
              f['tipo_procedimento'], f['status'], f['observacoes']))
-        flash('Consulta agendada com sucesso!', 'success')
+        pac = q1("SELECT nome FROM pacientes WHERE id=%s", (f['paciente_id'],))
+        try:
+            from datetime import datetime as _dt
+            dh = _dt.fromisoformat(f['data_hora']).strftime('%d/%m/%Y às %H:%M')
+        except Exception:
+            dh = f['data_hora']
+        nome = pac['nome'] if pac else 'Paciente'
+        flash(f'Consulta agendada com sucesso! {nome} — {dh}', 'success')
         return redirect(url_for('consultas_lista'))
     pacientes = q("SELECT id,nome FROM pacientes ORDER BY nome")
     dentistas = q("SELECT id,nome,especialidade FROM dentistas ORDER BY nome")
@@ -493,7 +500,9 @@ def consultas_editar(cid):
             "tipo_procedimento=%s,status=%s,observacoes=%s WHERE id=%s",
             (f['paciente_id'], f['dentista_id'], f['data_hora'],
              f['tipo_procedimento'], f['status'], f['observacoes'], cid))
-        flash('Consulta atualizada!', 'success')
+        pac = q1("SELECT nome FROM pacientes WHERE id=%s", (f['paciente_id'],))
+        nome = pac['nome'] if pac else 'Consulta'
+        flash(f'Consulta de {nome} atualizada com sucesso!', 'success')
         return redirect(url_for('consultas_detalhes', cid=cid))
     pacientes = q("SELECT id,nome FROM pacientes ORDER BY nome")
     dentistas = q("SELECT id,nome,especialidade FROM dentistas ORDER BY nome")
@@ -504,8 +513,17 @@ def consultas_editar(cid):
 @app.route('/consultas/<int:cid>/cancelar', methods=['POST'])
 @login_required
 def consultas_cancelar(cid):
+    c = q1("SELECT c.data_hora, p.nome FROM consultas c JOIN pacientes p ON p.id=c.paciente_id WHERE c.id=%s", (cid,))
     exe("UPDATE consultas SET status='cancelada' WHERE id=%s", (cid,))
-    flash('Consulta cancelada.', 'warning')
+    if c:
+        try:
+            from datetime import datetime as _dt
+            dh = _dt.fromisoformat(str(c['data_hora'])).strftime('%d/%m/%Y às %H:%M')
+        except Exception:
+            dh = str(c['data_hora'])
+        flash(f'Consulta de {c["nome"]} em {dh} cancelada.', 'warning')
+    else:
+        flash('Consulta cancelada.', 'warning')
     return redirect(url_for('consultas_lista'))
 
 
@@ -515,7 +533,12 @@ def consultas_status(cid):
     novo = request.form.get('status', '')
     if novo in ('agendada', 'confirmada', 'realizada', 'cancelada'):
         exe("UPDATE consultas SET status=%s WHERE id=%s", (novo, cid))
-        flash(f'Status atualizado para "{novo}".', 'success')
+        c = q1("SELECT p.nome FROM consultas c JOIN pacientes p ON p.id=c.paciente_id WHERE c.id=%s", (cid,))
+        labels = {'agendada': 'Agendada', 'confirmada': 'Confirmada ✓',
+                  'realizada': 'Realizada ✓', 'cancelada': 'Cancelada'}
+        nome = c['nome'] if c else ''
+        cat = 'success' if novo in ('confirmada', 'realizada') else ('warning' if novo == 'cancelada' else 'info')
+        flash(f'{labels.get(novo, novo)}: consulta de {nome}', cat)
     next_url = request.form.get('next') or request.referrer or url_for('consultas_lista')
     return redirect(next_url)
 
