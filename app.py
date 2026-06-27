@@ -107,7 +107,7 @@ def close_db(_e=None):
 
 @app.route('/')
 def portal():
-    dentistas = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=1 ORDER BY nome")
+    dentistas = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=TRUE ORDER BY nome")
     cliente = None
     if 'cliente_id' in session:
         cliente = q1("SELECT * FROM pacientes WHERE id=%s", (session['cliente_id'],))
@@ -154,7 +154,7 @@ def cliente_acesso():
 @app.route('/cliente/agendar', methods=['GET', 'POST'])
 @cliente_required
 def cliente_agendar():
-    dentistas = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=1 ORDER BY nome")
+    dentistas = q("SELECT id, nome, especialidade FROM dentistas WHERE ativo=TRUE ORDER BY nome")
     if request.method == 'POST':
         exe("""INSERT INTO consultas (paciente_id, dentista_id, data_hora, tipo_procedimento, observacoes, status)
                VALUES (%s,%s,%s,%s,%s,'agendada')""",
@@ -190,7 +190,7 @@ def admin_login():
         return redirect(url_for('dashboard'))
     error = None
     if request.method == 'POST':
-        row = q1("SELECT * FROM usuarios WHERE email=%s AND ativo=1",
+        row = q1("SELECT * FROM usuarios WHERE email=%s AND ativo=TRUE",
                  (request.form['email'].strip(),))
         if row and check_password_hash(row['senha'], request.form['senha']):
             session['usuario_id']     = row['id']
@@ -211,7 +211,7 @@ def admin_recuperar():
     temp_senha = None
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
-        row   = q1("SELECT id FROM usuarios WHERE email=%s AND ativo=1", (email,))
+        row   = q1("SELECT id FROM usuarios WHERE email=%s AND ativo=TRUE", (email,))
         if row:
             temp = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
             exe("UPDATE usuarios SET senha=%s WHERE id=%s", (generate_password_hash(temp), row['id']))
@@ -758,7 +758,7 @@ def dentistas_toggle(did):
     if not dentista:
         flash('Dentista não encontrado.', 'danger')
         return redirect(url_for('dentistas_lista'))
-    novo = 0 if dentista['ativo'] else 1
+    novo = not dentista['ativo']
     exe("UPDATE dentistas SET ativo=%s WHERE id=%s", (novo, did))
     flash(f'{dentista["nome"]} {"ativado" if novo else "desativado"}.', 'success')
     return redirect(url_for('dentistas_lista'))
